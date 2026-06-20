@@ -1,0 +1,16 @@
+# Normalize all text files to LF in the repository, regardless of OS.
+# Git will still check them out using your OS's native line endings if needed,
+# but this stops it from warning on every `git add`.
+* text=auto eol=lf
+
+# Treat these as binary - never touch their line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
