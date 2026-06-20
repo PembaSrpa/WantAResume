@@ -1,0 +1,35 @@
+// Ported from Reactive Resume (packages/utils/src/field.ts)
+// Original project: https://github.com/AmruthPillai/Reactive-Resume — MIT License
+// Copyright (c) 2026 Amruth Pillai
+//
+// NOTE: not listed in the original porting table, but required by pdf/fonts.ts
+// (via the original @reactive-resume/fonts package). Added to keep that import resolvable.
+
+type KeyedField<TKey extends string> = {
+	key: TKey;
+};
+
+type KeyValueMap<TKey extends string> = Partial<Record<TKey, string | null | undefined>>;
+
+/**
+ * Filters keyed field descriptors to only those whose corresponding value in the given
+ * values object is a non-empty string.
+ *
+ * This is useful for rendering or processing only the fields with actual, non-blank content,
+ * e.g., when displaying optional sections in a UI or assembling objects with present values.
+ *
+ * @param values - An object mapping keys to string values (which may be empty, null, or undefined)
+ * @param fields - Field descriptors with { key: TKey }
+ * @returns An array of fields whose corresponding values[key] is a non-empty string
+ */
+export function filterFieldValues<TKey extends string, TField extends KeyedField<TKey>>(
+	values: KeyValueMap<TKey>,
+	...fields: TField[]
+) {
+	const filteredFields = fields.filter((field) => Boolean(values[field.key]?.trim()));
+	return new Map(filteredFields.map((field) => [field.key, field] as const));
+}
+
+export function unique<T>(items: T[]) {
+	return items.filter((item, index) => items.indexOf(item) === index);
+}

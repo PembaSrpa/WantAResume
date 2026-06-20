@@ -1,0 +1,53 @@
+// Ported from Reactive Resume (packages/pdf/src/templates/shared/rich-text-renderers.ts)
+// Original project: https://github.com/AmruthPillai/Reactive-Resume — MIT License
+// Copyright (c) 2026 Amruth Pillai
+
+import type { Style } from "@react-pdf/types";
+import type { ReactNode } from "react";
+import { createElement } from "react";
+import { Text as PdfText } from "../../renderer";
+import {
+	getRichTextEdgeTrimStyle,
+	isRichTextElementInsideListItem,
+	stripRichTextVerticalMargins,
+} from "./rich-text-spacing";
+import { composeStyles } from "./styles";
+
+export const toRichTextStyleArray = (style: Style | Style[] | undefined): Style[] => {
+	if (!style) return [];
+	if (Array.isArray(style)) return style.filter(Boolean);
+
+	return [style];
+};
+
+type RichTextParagraphRendererProps = {
+	children: ReactNode;
+	element: Parameters<typeof isRichTextElementInsideListItem>[0];
+	style: Style | Style[] | undefined;
+	rtl?: boolean;
+	rtlTextWrapStyle?: Style | undefined;
+	applyRtlDirection?: (node: ReactNode) => ReactNode;
+};
+
+export const renderRichTextParagraph = ({
+	element,
+	style,
+	children,
+	rtl,
+	rtlTextWrapStyle,
+	applyRtlDirection,
+}: RichTextParagraphRendererProps) => {
+	const paragraphStyles = isRichTextElementInsideListItem(element)
+		? toRichTextStyleArray(style).map(stripRichTextVerticalMargins)
+		: style;
+
+	const composedStyle = composeStyles(
+		paragraphStyles,
+		getRichTextEdgeTrimStyle(element),
+		rtl ? rtlTextWrapStyle : undefined,
+	);
+
+	const content = rtl && applyRtlDirection ? applyRtlDirection(children) : children;
+
+	return createElement(PdfText, { style: composedStyle }, content);
+};
