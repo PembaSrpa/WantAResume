@@ -20,7 +20,10 @@ export function PDFCanvas({
       setError(null)
       try {
         const pdfjsLib = await import("pdfjs-dist")
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          "pdfjs-dist/build/pdf.worker.min.mjs",
+          import.meta.url,
+        ).toString()
 
         const pdf = await pdfjsLib.getDocument(blobUrl).promise
         if (cancelled) return
