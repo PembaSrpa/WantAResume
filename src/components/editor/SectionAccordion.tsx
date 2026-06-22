@@ -78,6 +78,7 @@ export function SectionAccordion() {
 
   return (
     <DndContext
+      id="section-order"
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleSectionDragEnd}
@@ -265,6 +266,7 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
   return (
     <div className="flex flex-col gap-2 border-t border-neutral-700 px-3 pb-3 pt-2">
       <DndContext
+        id={`section-items-${sectionType}`}
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleItemDragEnd}
@@ -331,6 +333,7 @@ function ExperienceSectionBody() {
   return (
     <div className="flex flex-col gap-2 border-t border-neutral-700 px-3 pb-3 pt-2">
       <DndContext
+        id="section-items-experience"
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleItemDragEnd}
