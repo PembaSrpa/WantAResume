@@ -79,11 +79,11 @@ export function ExperienceItemModal({
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-md rounded-lg border border-orange-700 bg-neutral-900 p-5"
         >
-          <h2 className="mb-4 text-sm text-neutral-100">
+          <h2 className="mb-4 text-[13.5px] font-medium text-neutral-100">
             {item ? "Edit experience" : "Add experience"}
           </h2>
 
-          <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto pr-1">
+          <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
             <Field label="Company">
               <Input
                 value={draft.company}
@@ -243,7 +243,7 @@ function RoleModal({
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-lg border border-orange-700 bg-neutral-900 p-5"
       >
-        <h3 className="mb-4 text-sm text-neutral-100">
+        <h3 className="mb-4 text-[13.5px] font-medium text-neutral-100">
           {role ? "Edit role" : "Add role"}
         </h3>
         <div className="flex flex-col gap-3">
@@ -282,8 +282,10 @@ function RoleModal({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs text-neutral-400">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
+        {label}
+      </span>
       {children}
     </label>
   )

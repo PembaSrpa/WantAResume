@@ -8,6 +8,9 @@ import { BottomNav, type BottomNavTab } from "@/components/mobile/BottomNav"
 import { SectionAccordion } from "@/components/editor/SectionAccordion"
 import { BasicsForm } from "@/components/editor/BasicsForm"
 import { Button } from "@/components/ui/Button"
+import { Select } from "@/components/ui/Select"
+import { useResumeStore } from "@/lib/store/resume"
+import { templateSchema, type Template } from "@/lib/schema/templates"
 
 // Editing only. PreviewPanel/PDFCanvas/PDF.js are NOT imported anywhere in
 // this file or its tree — see TASK_PREVIEW_SPLIT.md. Preview lives at its
@@ -21,6 +24,12 @@ const EDITOR_TABS: { id: EditorTab; label: string }[] = [
   { id: "sections", label: "Sections" },
   { id: "design", label: "Design" },
 ]
+
+const TEMPLATES = templateSchema.options
+
+function templateLabel(name: Template) {
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
 
 export default function EditorPage() {
   const router = useRouter()
@@ -111,10 +120,13 @@ function EditorPanelShell({
   onTabChange: (tab: EditorTab) => void
   onPreview: () => void
 }) {
+  const template = useResumeStore((state) => state.template)
+  const setTemplate = useResumeStore((state) => state.setTemplate)
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center border-b border-neutral-800 px-4">
-        <div className="flex flex-1">
+      <div className="flex items-center gap-3 border-b border-neutral-800 px-4">
+        <div className="flex flex-1 gap-1 py-2">
           {EDITOR_TABS.map((tab) => (
             <button
               key={tab.id}
@@ -122,20 +134,33 @@ function EditorPanelShell({
               onClick={() => onTabChange(tab.id)}
               className={
                 activeTab === tab.id
-                  ? "border-b-2 border-orange-700 px-3 py-3 text-sm text-neutral-100"
-                  : "border-b-2 border-transparent px-3 py-3 text-sm text-neutral-400 hover:text-neutral-200"
+                  ? "rounded-t-md border-b-2 border-orange-700 bg-neutral-900 px-3.5 py-2 text-[13px] font-medium tracking-[0.01em] text-neutral-100"
+                  : "rounded-t-md border-b-2 border-transparent px-3.5 py-2 text-[13px] text-neutral-500 transition-colors hover:text-neutral-300"
               }
             >
               {tab.label}
             </button>
           ))}
         </div>
+
+        <Select
+          value={template}
+          onChange={(e) => setTemplate(e.target.value as Template)}
+          className="h-8 w-32 py-0 text-xs"
+        >
+          {TEMPLATES.map((name) => (
+            <option key={name} value={name}>
+              {templateLabel(name)}
+            </option>
+          ))}
+        </Select>
+
         <Button type="button" onClick={onPreview} className="my-2">
           <IconEye size={14} />
           Preview
         </Button>
       </div>
-      <div className="flex-1 p-4">
+      <div className="flex-1 overflow-y-auto p-5">
         {activeTab === "basics" && <BasicsForm />}
         {activeTab === "sections" && <SectionAccordion />}
         {activeTab === "design" && <DesignPanelPlaceholder />}

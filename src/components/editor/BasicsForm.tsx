@@ -40,7 +40,7 @@ export function BasicsForm() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[18px]">
       <Field label="Name">
         <Input value={basics.name} onChange={(e) => patchBasics({ name: e.target.value })} />
       </Field>
@@ -132,8 +132,10 @@ export function BasicsForm() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs text-neutral-400">{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
+        {label}
+      </span>
       {children}
     </label>
   )

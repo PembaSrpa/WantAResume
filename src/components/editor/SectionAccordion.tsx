@@ -23,6 +23,7 @@ import {
   IconTrash,
   IconPlus,
 } from "@tabler/icons-react"
+import { motion, AnimatePresence } from "motion/react"
 import { useResumeStore } from "@/lib/store/resume"
 import type { SectionType, ExperienceItem } from "@/lib/schema/data"
 import { Switch } from "@/components/ui/Switch"
@@ -84,7 +85,7 @@ export function SectionAccordion() {
       onDragEnd={handleSectionDragEnd}
     >
       <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
           {sectionOrder.map((sectionType) => (
             <SortableSectionRow
               key={sectionType}
@@ -123,7 +124,7 @@ function SortableSectionRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="rounded-md border border-neutral-700 bg-neutral-800"
+      className="rounded-md border border-neutral-700 bg-neutral-800 transition-colors duration-150 hover:border-neutral-600"
     >
       <SectionHeader
         sectionType={sectionType}
@@ -131,7 +132,19 @@ function SortableSectionRow({
         onToggle={onToggle}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
-      {isOpen && <SectionBody sectionType={sectionType} />}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            <SectionBody sectionType={sectionType} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -159,10 +172,10 @@ function SectionHeader({
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2.5">
+    <div className="flex items-center gap-2.5 px-3.5 py-2.5">
       <button
         type="button"
-        className="cursor-grab text-neutral-500 hover:text-neutral-300"
+        className="cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
         {...dragHandleProps}
       >
         <IconGripVertical size={16} />
@@ -175,13 +188,13 @@ function SectionHeader({
           onChange={(e) => setTitleDraft(e.target.value)}
           onBlur={commitRename}
           onKeyDown={(e) => e.key === "Enter" && commitRename()}
-          className="h-7 flex-1 py-0 text-sm"
+          className="h-7 flex-1 py-0 text-[13px]"
         />
       ) : (
         <button
           type="button"
           onClick={() => setRenaming(true)}
-          className="flex-1 text-left text-sm text-neutral-100"
+          className="flex-1 text-left text-[13.5px] font-medium tracking-[0.01em] text-neutral-100"
         >
           {section.title || sectionType}
         </button>
@@ -190,7 +203,7 @@ function SectionHeader({
       <Select
         value={section.columns}
         onChange={(e) => updateSection(sectionType, { columns: Number(e.target.value) })}
-        className="h-7 w-16 px-2 py-0 text-xs"
+        className="h-7 w-[68px] px-2 py-0 text-[11.5px]"
       >
         <option value={1}>1 col</option>
         <option value={2}>2 col</option>
@@ -205,11 +218,15 @@ function SectionHeader({
       <button
         type="button"
         onClick={onToggle}
-        className="text-neutral-400 hover:text-neutral-200"
+        className="text-neutral-400 transition-colors hover:text-neutral-100"
       >
         <IconChevronDown
           size={16}
-          className={isOpen ? "rotate-180 transition-transform" : "transition-transform"}
+          className={
+            isOpen
+              ? "rotate-180 transition-transform duration-150"
+              : "transition-transform duration-150"
+          }
         />
       </button>
     </div>
@@ -264,7 +281,7 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 border-t border-neutral-700 px-3 pb-3 pt-2">
+    <div className="flex flex-col gap-2 border-t border-neutral-700 px-3.5 pb-3.5 pt-3">
       <DndContext
         id={`section-items-${sectionType}`}
         sensors={sensors}
@@ -290,7 +307,7 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
       <button
         type="button"
         onClick={() => setModalItem("new")}
-        className="mt-1 flex items-center gap-1.5 self-start rounded-md border border-orange-700 bg-neutral-800 px-2.5 py-1 text-xs text-neutral-100"
+        className="mt-1.5 flex items-center gap-1.5 self-start rounded-md border border-orange-700 bg-neutral-800 px-3 py-1.5 text-[12px] text-neutral-100 transition-colors duration-150 hover:bg-neutral-700"
       >
         <IconPlus size={14} />
         Add item
@@ -331,7 +348,7 @@ function ExperienceSectionBody() {
   }
 
   return (
-    <div className="flex flex-col gap-2 border-t border-neutral-700 px-3 pb-3 pt-2">
+    <div className="flex flex-col gap-2 border-t border-neutral-700 px-3.5 pb-3.5 pt-3">
       <DndContext
         id="section-items-experience"
         sensors={sensors}
@@ -357,7 +374,7 @@ function ExperienceSectionBody() {
       <button
         type="button"
         onClick={() => setModalItem("new")}
-        className="mt-1 flex items-center gap-1.5 self-start rounded-md border border-orange-700 bg-neutral-800 px-2.5 py-1 text-xs text-neutral-100"
+        className="mt-1.5 flex items-center gap-1.5 self-start rounded-md border border-orange-700 bg-neutral-800 px-3 py-1.5 text-[12px] text-neutral-100 transition-colors duration-150 hover:bg-neutral-700"
       >
         <IconPlus size={14} />
         Add item
@@ -399,21 +416,29 @@ function SortableItemRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-900 px-2.5 py-1.5"
+      className="flex items-center gap-2.5 rounded-md border border-neutral-700 bg-neutral-900 px-2.5 py-2 transition-colors duration-150 hover:border-neutral-600"
     >
       <button
         type="button"
-        className="cursor-grab text-neutral-500 hover:text-neutral-300"
+        className="cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
         {...attributes}
         {...listeners}
       >
         <IconGripVertical size={14} />
       </button>
-      <span className="flex-1 truncate text-xs text-neutral-200">{summary}</span>
-      <button type="button" onClick={onEdit} className="text-neutral-400 hover:text-neutral-200">
+      <span className="flex-1 truncate text-[12.5px] text-neutral-200">{summary}</span>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="text-neutral-500 transition-colors hover:text-neutral-200"
+      >
         <IconEdit size={14} />
       </button>
-      <button type="button" onClick={onDelete} className="text-neutral-400 hover:text-neutral-200">
+      <button
+        type="button"
+        onClick={onDelete}
+        className="text-neutral-500 transition-colors hover:text-neutral-200"
+      >
         <IconTrash size={14} />
       </button>
     </div>

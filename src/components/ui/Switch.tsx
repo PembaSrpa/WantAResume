@@ -26,8 +26,11 @@ export function Switch({
       disabled={disabled}
       onClick={() => onCheckedChange(!checked)}
       className={cn(
-        "relative h-4 w-7 rounded-full border border-orange-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        checked ? "bg-orange-700" : "bg-neutral-700",
+        "relative h-[17px] w-[30px] rounded-full border transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+        "focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(194,65,12,0.18)]",
+        checked
+          ? "border-orange-700 bg-orange-700"
+          : "border-neutral-600 bg-neutral-700 hover:border-neutral-500",
         className
       )}
       {...rest}
