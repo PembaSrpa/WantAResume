@@ -1,11 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
 import { v4 as uuidv4 } from "uuid"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
-import { Button } from "@/components/ui/Button"
 import { TagInput } from "./TagInput"
 import { LevelSlider } from "./LevelSlider"
 
@@ -55,77 +52,7 @@ export function emptyItemFromFields(fields: FieldConfig[]): GenericItem {
   return item
 }
 
-export function GenericItemModal({
-  title,
-  fields,
-  item,
-  onSave,
-  onClose,
-}: {
-  title: string
-  fields: FieldConfig[]
-  item: GenericItem | null
-  onSave: (item: GenericItem) => void
-  onClose: () => void
-}) {
-  const [draft, setDraft] = useState<GenericItem>(item ?? emptyItemFromFields(fields))
-
-  function patch(key: string, value: unknown) {
-    setDraft((current) => ({ ...current, [key]: value }))
-  }
-
-  function patchWebsite(key: string, sub: Record<string, unknown>) {
-    setDraft((current) => ({
-      ...current,
-      [key]: { ...(current[key] as Record<string, unknown>), ...sub },
-    }))
-  }
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md rounded-lg border border-orange-700 bg-neutral-900 p-5"
-        >
-          <h2 className="mb-4 text-[13.5px] font-medium text-neutral-100">{title}</h2>
-
-          <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
-            {fields.map((field) => (
-              <FieldRenderer
-                key={field.key}
-                field={field}
-                value={draft[field.key]}
-                onChange={(value) => patch(field.key, value)}
-                onWebsiteChange={(sub) => patchWebsite(field.key, sub)}
-              />
-            ))}
-          </div>
-
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="ghost" type="button" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={() => onSave(draft)}>
-              Save
-            </Button>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  )
-}
-
-function FieldRenderer({
+export function FieldRenderer({
   field,
   value,
   onChange,
@@ -209,7 +136,7 @@ function FieldRenderer({
   }
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">

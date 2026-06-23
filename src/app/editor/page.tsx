@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { IconEye } from "@tabler/icons-react"
+import { IconEye, IconArrowLeft } from "@tabler/icons-react"
 import { Scales } from "@/components/Scales"
 import { BottomNav, type BottomNavTab } from "@/components/mobile/BottomNav"
 import { SectionAccordion } from "@/components/editor/SectionAccordion"
@@ -81,6 +81,7 @@ export default function EditorPage() {
             activeTab={editorTab}
             onTabChange={selectEditorTab}
             onPreview={() => router.push("/editor/preview")}
+            onBack={() => router.push("/")}
           />
         </div>
         <div className="w-[5%] flex-shrink-0" />
@@ -93,13 +94,26 @@ export default function EditorPage() {
             activeTab={editorTab}
             onTabChange={selectEditorTab}
             onPreview={() => router.push("/editor/preview")}
+            onBack={() => router.push("/")}
           />
         </div>
       </div>
 
       {/* Mobile layout: single panel driven by bottom nav. "Preview" now
-          navigates to /editor/preview instead of swapping in a panel. */}
+          navigates to /editor/preview instead of swapping in a panel. A
+          slim back-button row replaces the old "no top navbar" emptiness —
+          this is a single-purpose affordance, not a full navbar. */}
       <div className="flex h-full flex-col md:hidden">
+        <div className="flex items-center border-b border-neutral-800 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="flex items-center gap-1.5 px-1 py-1 text-neutral-400 transition-colors hover:text-neutral-100"
+            aria-label="Back to homepage"
+          >
+            <IconArrowLeft size={16} />
+          </button>
+        </div>
         <div className="flex-1 overflow-y-auto pb-16">
           {editorTab === "basics" && <BasicsForm />}
           {editorTab === "sections" && <SectionAccordion />}
@@ -115,10 +129,12 @@ function EditorPanelShell({
   activeTab,
   onTabChange,
   onPreview,
+  onBack,
 }: {
   activeTab: EditorTab
   onTabChange: (tab: EditorTab) => void
   onPreview: () => void
+  onBack: () => void
 }) {
   const template = useResumeStore((state) => state.template)
   const setTemplate = useResumeStore((state) => state.setTemplate)
@@ -126,6 +142,15 @@ function EditorPanelShell({
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-neutral-800 px-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 rounded-md px-1.5 py-2 text-neutral-400 transition-colors hover:text-neutral-100"
+          aria-label="Back to homepage"
+        >
+          <IconArrowLeft size={17} />
+        </button>
+
         <div className="flex flex-1 gap-1 py-2">
           {EDITOR_TABS.map((tab) => (
             <button

@@ -30,7 +30,8 @@ import { Switch } from "@/components/ui/Switch"
 import { Input } from "@/components/ui/Input"
 import { Select } from "@/components/ui/Select"
 import { ExperienceItemModal } from "./SectionItemModal"
-import { GenericItemModal, type GenericItem } from "./GenericItemModal"
+import { emptyItemFromFields, type GenericItem } from "./itemFields"
+import { InlineItemFields } from "./InlineItemFields"
 import { GENERIC_SECTION_FIELDS, sectionItemSummary } from "./sectionFieldConfig"
 
 // Built-in section keys this accordion manages. "summary" is handled separately
@@ -172,10 +173,14 @@ function SectionHeader({
   }
 
   return (
-    <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+    <div
+      onClick={onToggle}
+      className="flex cursor-pointer items-center gap-2.5 rounded-md px-3.5 py-2.5 transition-colors hover:bg-neutral-700/40"
+    >
       <button
         type="button"
         className="cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
+        onClick={(e) => e.stopPropagation()}
         {...dragHandleProps}
       >
         <IconGripVertical size={16} />
@@ -188,12 +193,16 @@ function SectionHeader({
           onChange={(e) => setTitleDraft(e.target.value)}
           onBlur={commitRename}
           onKeyDown={(e) => e.key === "Enter" && commitRename()}
+          onClick={(e) => e.stopPropagation()}
           className="h-7 flex-1 py-0 text-[13px]"
         />
       ) : (
         <button
           type="button"
-          onClick={() => setRenaming(true)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setRenaming(true)
+          }}
           className="flex-1 text-left text-[13.5px] font-medium tracking-[0.01em] text-neutral-100"
         >
           {section.title || sectionType}
@@ -202,6 +211,7 @@ function SectionHeader({
 
       <Select
         value={section.columns}
+        onClick={(e) => e.stopPropagation()}
         onChange={(e) => updateSection(sectionType, { columns: Number(e.target.value) })}
         className="h-7 w-[68px] px-2 py-0 text-[11.5px]"
       >
@@ -209,15 +219,20 @@ function SectionHeader({
         <option value={2}>2 col</option>
       </Select>
 
-      <Switch
-        checked={!section.hidden}
-        onCheckedChange={(checked) => updateSection(sectionType, { hidden: !checked })}
-        aria-label={`Toggle ${sectionType} visibility`}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <Switch
+          checked={!section.hidden}
+          onCheckedChange={(checked) => updateSection(sectionType, { hidden: !checked })}
+          aria-label={`Toggle ${sectionType} visibility`}
+        />
+      </div>
 
       <button
         type="button"
-        onClick={onToggle}
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggle()
+        }}
         className="text-neutral-400 transition-colors hover:text-neutral-100"
       >
         <IconChevronDown
@@ -267,7 +282,10 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
   const removeSectionItem = useResumeStore((state) => state.removeSectionItem)
   const upsertSectionItem = useResumeStore((state) => state.upsertSectionItem)
 
-  const [modalItem, setModalItem] = useState<GenericItem | "new" | null>(null)
+  // Only one item expanded at a time per section, mirroring the section
+  // accordion's own one-at-a-time behavior. No modal, no draft state — every
+  // field change writes straight to the store, same pattern as BasicsForm.
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor))
   const fields = GENERIC_SECTION_FIELDS[sectionType] ?? []
@@ -278,6 +296,12 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
     const oldIndex = items.findIndex((item) => item.id === active.id)
     const newIndex = items.findIndex((item) => item.id === over.id)
     reorderSectionItems(sectionType, oldIndex, newIndex)
+  }
+
+  function handleAddItem() {
+    const newItem = emptyItemFromFields(fields)
+    upsertSectionItem(sectionType, newItem as never)
+    setExpandedId(newItem.id)
   }
 
   return (
@@ -293,38 +317,37 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
           strategy={verticalListSortingStrategy}
         >
           {items.map((item) => (
-            <SortableItemRow
+            <InlineSortableItemRow
               key={item.id}
               id={item.id}
               summary={sectionItemSummary(sectionType, item)}
-              onEdit={() => setModalItem(item as GenericItem)}
-              onDelete={() => removeSectionItem(sectionType, item.id)}
-            />
+              isExpanded={expandedId === item.id}
+              onToggle={() =>
+                setExpandedId((current) => (current === item.id ? null : item.id))
+              }
+              onDelete={() => {
+                removeSectionItem(sectionType, item.id)
+                if (expandedId === item.id) setExpandedId(null)
+              }}
+            >
+              <InlineItemFields
+                fields={fields}
+                item={item as GenericItem}
+                onChange={(updated) => upsertSectionItem(sectionType, updated as never)}
+              />
+            </InlineSortableItemRow>
           ))}
         </SortableContext>
       </DndContext>
 
       <button
         type="button"
-        onClick={() => setModalItem("new")}
+        onClick={handleAddItem}
         className="mt-1.5 flex items-center gap-1.5 self-start rounded-md border border-orange-700 bg-neutral-800 px-3 py-1.5 text-[12px] text-neutral-100 transition-colors duration-150 hover:bg-neutral-700"
       >
         <IconPlus size={14} />
         Add item
       </button>
-
-      {modalItem !== null && (
-        <GenericItemModal
-          title={modalItem === "new" ? `Add ${sectionType.slice(0, -1)}` : `Edit ${sectionType.slice(0, -1)}`}
-          fields={fields}
-          item={modalItem === "new" ? null : modalItem}
-          onSave={(item) => {
-            upsertSectionItem(sectionType, item as never)
-            setModalItem(null)
-          }}
-          onClose={() => setModalItem(null)}
-        />
-      )}
     </div>
   )
 }
@@ -390,6 +413,89 @@ function ExperienceSectionBody() {
           onClose={() => setModalItem(null)}
         />
       )}
+    </div>
+  )
+}
+
+function InlineSortableItemRow({
+  id,
+  summary,
+  isExpanded,
+  onToggle,
+  onDelete,
+  children,
+}: {
+  id: string
+  summary: string
+  isExpanded: boolean
+  onToggle: () => void
+  onDelete: () => void
+  children: React.ReactNode
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={
+        isExpanded
+          ? "rounded-md border border-orange-700 bg-neutral-900"
+          : "rounded-md border border-neutral-700 bg-neutral-900 transition-colors duration-150 hover:border-neutral-600"
+      }
+    >
+      <div
+        onClick={onToggle}
+        className="flex cursor-pointer items-center gap-2.5 px-2.5 py-2"
+      >
+        <button
+          type="button"
+          className="cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
+          onClick={(e) => e.stopPropagation()}
+          {...attributes}
+          {...listeners}
+        >
+          <IconGripVertical size={14} />
+        </button>
+        <span className="flex-1 truncate text-[12.5px] text-neutral-200">{summary}</span>
+        <IconChevronDown
+          size={14}
+          className={
+            isExpanded
+              ? "rotate-180 text-neutral-300 transition-transform duration-150"
+              : "text-neutral-500 transition-transform duration-150"
+          }
+        />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
+          className="text-neutral-500 transition-colors hover:text-neutral-200"
+        >
+          <IconTrash size={14} />
+        </button>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

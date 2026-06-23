@@ -1,175 +1,64 @@
 "use client"
-
-import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { IconEye } from "@tabler/icons-react"
+import Image from "next/image"
+import { motion } from "motion/react"
 import { Scales } from "@/components/Scales"
-import { BottomNav, type BottomNavTab } from "@/components/mobile/BottomNav"
-import { SectionAccordion } from "@/components/editor/SectionAccordion"
-import { BasicsForm } from "@/components/editor/BasicsForm"
-import { Button } from "@/components/ui/Button"
-import { Select } from "@/components/ui/Select"
 import { useResumeStore } from "@/lib/store/resume"
 import { templateSchema, type Template } from "@/lib/schema/templates"
-
-// Editing only. PreviewPanel/PDFCanvas/PDF.js are NOT imported anywhere in
-// this file or its tree — see TASK_PREVIEW_SPLIT.md. Preview lives at its
-// own route, /editor/preview, so this route's bundle never has to load
-// @react-pdf/renderer, pdfjs-dist, or the 15 template files.
-
-type EditorTab = "basics" | "sections" | "design"
-
-const EDITOR_TABS: { id: EditorTab; label: string }[] = [
-  { id: "basics", label: "Basics" },
-  { id: "sections", label: "Sections" },
-  { id: "design", label: "Design" },
-]
-
-const TEMPLATES = templateSchema.options
-
+const TEMPLATES: Template[] = templateSchema.options
 function templateLabel(name: Template) {
   return name.charAt(0).toUpperCase() + name.slice(1)
 }
-
-export default function EditorPage() {
+export default function HomePage() {
   const router = useRouter()
-  const [editorTab, setEditorTab] = useState<EditorTab>("sections")
-  // Remembers which non-design EditorTab to return to when the mobile
-  // bottom nav's "Edit" tab is tapped after being on "Design". Keeps
-  // BottomNavTab ("edit"/"preview"/"design") and EditorTab
-  // ("basics"/"sections"/"design") as genuinely separate vocabularies
-  // instead of forcing a lossy 1:1 mapping between them.
-  const [lastEditorTab, setLastEditorTab] = useState<Exclude<EditorTab, "design">>("basics")
-
-  function selectEditorTab(tab: EditorTab) {
-    setEditorTab(tab)
-    if (tab !== "design") setLastEditorTab(tab)
-  }
-
-  function handleMobileNavChange(tab: BottomNavTab) {
-    if (tab === "preview") {
-      router.push("/editor/preview")
-      return
-    }
-    if (tab === "design") {
-      setEditorTab("design")
-      return
-    }
-    // tab === "edit": go back to whichever real EditorTab was last active.
-    setEditorTab(lastEditorTab)
-  }
-
-  // BottomNav's "active" prop only knows edit/preview/design; basics and
-  // sections both surface as "edit" from its perspective, which is a
-  // display-only simplification — the underlying editorTab state never
-  // loses the basics/sections distinction.
-  const mobileNavActive: BottomNavTab = editorTab === "design" ? "design" : "edit"
-
-  return (
-    <div className="relative h-screen overflow-hidden bg-[#0a0a0a]">
-      {/* Desktop / tablet: Scales only show at >=1024px per spec (hidden on tablet+mobile) */}
-      <div className="hidden lg:block">
-        <Scales />
-      </div>
-
-      {/* Desktop layout: editor fills the space between the scales. No
-          preview column anymore — see TASK_PREVIEW_SPLIT.md. */}
-      <div className="hidden h-full lg:flex">
-        <div className="w-[5%] flex-shrink-0" />
-        <div className="flex-1 overflow-y-auto">
-          <EditorPanelShell
-            activeTab={editorTab}
-            onTabChange={selectEditorTab}
-            onPreview={() => router.push("/editor/preview")}
-          />
-        </div>
-        <div className="w-[5%] flex-shrink-0" />
-      </div>
-
-      {/* Tablet layout: same single-panel editor, no Scales. */}
-      <div className="hidden h-full md:flex lg:hidden">
-        <div className="flex-1 overflow-y-auto">
-          <EditorPanelShell
-            activeTab={editorTab}
-            onTabChange={selectEditorTab}
-            onPreview={() => router.push("/editor/preview")}
-          />
-        </div>
-      </div>
-
-      {/* Mobile layout: single panel driven by bottom nav. "Preview" now
-          navigates to /editor/preview instead of swapping in a panel. */}
-      <div className="flex h-full flex-col md:hidden">
-        <div className="flex-1 overflow-y-auto pb-16">
-          {editorTab === "basics" && <BasicsForm />}
-          {editorTab === "sections" && <SectionAccordion />}
-          {editorTab === "design" && <DesignPanelPlaceholder />}
-        </div>
-        <BottomNav active={mobileNavActive} onChange={handleMobileNavChange} />
-      </div>
-    </div>
-  )
-}
-
-function EditorPanelShell({
-  activeTab,
-  onTabChange,
-  onPreview,
-}: {
-  activeTab: EditorTab
-  onTabChange: (tab: EditorTab) => void
-  onPreview: () => void
-}) {
-  const template = useResumeStore((state) => state.template)
   const setTemplate = useResumeStore((state) => state.setTemplate)
-
+  function handleSelect(template: Template) {
+    setTemplate(template)
+    router.push("/editor")
+  }
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-neutral-800 px-4">
-        <div className="flex flex-1 gap-1 py-2">
-          {EDITOR_TABS.map((tab) => (
-            <button
-              key={tab.id}
+    <div className="relative min-h-screen bg-[#0a0a0a]">
+      <Scales />
+      <div className="mx-auto max-w-6xl px-8 py-16 md:px-16">
+        <h1 className="mb-10 text-center text-2xl text-neutral-100">
+          Choose a template
+        </h1>
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
+          {TEMPLATES.map((name, index) => (
+            <motion.button
+              key={name}
               type="button"
-              onClick={() => onTabChange(tab.id)}
-              className={
-                activeTab === tab.id
-                  ? "rounded-t-md border-b-2 border-orange-700 bg-neutral-900 px-3.5 py-2 text-[13px] font-medium tracking-[0.01em] text-neutral-100"
-                  : "rounded-t-md border-b-2 border-transparent px-3.5 py-2 text-[13px] text-neutral-500 transition-colors hover:text-neutral-300"
-              }
+              onClick={() => handleSelect(name)}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.04 }}
+              whileHover={{ y: -4 }}
+              className="group flex flex-col items-center gap-3 text-left"
             >
-              {tab.label}
-            </button>
+              <div className="relative aspect-[210/297]  w-full overflow-hidden border border-neutral-700 bg-black transition-colors duration-300 group-hover:border-orange-700 ">
+                <Image
+                  src={`/templates/jpg/${name}.jpg`}
+                  alt=""
+                  fill
+                  aria-hidden="true"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-cover object-top blur-xl scale-125 opacity-30 brightness-50"
+                />
+                <Image
+                  src={`/templates/jpg/${name}.jpg`}
+                  alt={`${templateLabel(name)} resume template preview`}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-contain object-top"
+                />
+              </div>
+              <span className="text-sm text-neutral-300">
+                {templateLabel(name)}
+              </span>
+            </motion.button>
           ))}
         </div>
-
-        <Select
-          value={template}
-          onChange={(e) => setTemplate(e.target.value as Template)}
-          className="h-8 w-32 py-0 text-xs"
-        >
-          {TEMPLATES.map((name) => (
-            <option key={name} value={name}>
-              {templateLabel(name)}
-            </option>
-          ))}
-        </Select>
-
-        <Button type="button" onClick={onPreview} className="my-2">
-          <IconEye size={14} />
-          Preview
-        </Button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-5">
-        {activeTab === "basics" && <BasicsForm />}
-        {activeTab === "sections" && <SectionAccordion />}
-        {activeTab === "design" && <DesignPanelPlaceholder />}
       </div>
     </div>
   )
-}
-
-// DesignPanelPlaceholder still in use — Design tab not built yet.
-function DesignPanelPlaceholder() {
-  return <p className="text-sm text-neutral-500">Design controls go here.</p>
 }

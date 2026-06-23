@@ -1,4 +1,4 @@
-import type { FieldConfig } from "./GenericItemModal"
+import type { FieldConfig } from "./itemFields"
 import type {
   SectionType,
   ProfileItem,
