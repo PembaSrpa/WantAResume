@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import {
   DndContext,
   closestCenter,
@@ -11,6 +11,7 @@ import {
 } from "@dnd-kit/core"
 import {
   SortableContext,
+  rectSortingStrategy,
   verticalListSortingStrategy,
   arrayMove,
   useSortable,
@@ -28,7 +29,6 @@ import { useResumeStore } from "@/lib/store/resume"
 import type { SectionType, ExperienceItem } from "@/lib/schema/data"
 import { Switch } from "@/components/ui/Switch"
 import { Input } from "@/components/ui/Input"
-import { Select } from "@/components/ui/Select"
 import { ExperienceItemModal } from "./SectionItemModal"
 import { emptyItemFromFields, type GenericItem } from "./itemFields"
 import { InlineItemFields } from "./InlineItemFields"
@@ -85,8 +85,8 @@ export function SectionAccordion() {
       collisionDetection={closestCenter}
       onDragEnd={handleSectionDragEnd}
     >
-      <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-        <div className="flex flex-col gap-2.5">
+      <SortableContext items={sectionOrder} strategy={rectSortingStrategy}>
+        <div className="grid grid-cols-1 items-start gap-2.5 lg:grid-cols-2">
           {sectionOrder.map((sectionType) => (
             <SortableSectionRow
               key={sectionType}
@@ -125,7 +125,11 @@ function SortableSectionRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="rounded-md border border-neutral-700 bg-neutral-800 transition-colors duration-150 hover:border-neutral-600"
+      className={
+        isOpen
+          ? "rounded-md border border-neutral-700 bg-neutral-800 transition-colors duration-150 hover:border-neutral-600 lg:col-span-2"
+          : "min-w-0 rounded-md border border-neutral-700 bg-neutral-800 transition-colors duration-150 hover:border-neutral-600"
+      }
     >
       <SectionHeader
         sectionType={sectionType}
@@ -165,11 +169,38 @@ function SectionHeader({
   const updateSection = useResumeStore((state) => state.updateSection)
 
   const [renaming, setRenaming] = useState(false)
-  const [titleDraft, setTitleDraft] = useState(section.title)
+  const [titleDraft, setTitleDraft] = useState(section.title || sectionType)
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function commitRename() {
     updateSection(sectionType, { title: titleDraft })
     setRenaming(false)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
+    }
+  }, [])
+
+  // Single click anywhere on the row, including the title, toggles
+  // expand/collapse. Double-click specifically on the title enters rename
+  // mode instead. A double-click fires two click events before (and
+  // sometimes instead of) a dblclick event, so the first click is held
+  // briefly — if a second click lands within the window, it's treated as
+  // a double-click and the pending single-click toggle is cancelled.
+  function handleTitleClick() {
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+      setTitleDraft(section.title || sectionType)
+      setRenaming(true)
+      return
+    }
+    clickTimerRef.current = setTimeout(() => {
+      clickTimerRef.current = null
+      onToggle()
+    }, 250)
   }
 
   return (
@@ -201,23 +232,48 @@ function SectionHeader({
           type="button"
           onClick={(e) => {
             e.stopPropagation()
-            setRenaming(true)
+            handleTitleClick()
           }}
-          className="flex-1 text-left text-[13.5px] font-medium tracking-[0.01em] text-neutral-100"
+          title={`${section.title || sectionType} — click to expand, double-click to rename`}
+          className="min-w-0 flex-1 truncate text-left text-[13.5px] font-medium tracking-[0.01em] text-neutral-100"
         >
           {section.title || sectionType}
         </button>
       )}
 
-      <Select
-        value={section.columns}
+      <div
         onClick={(e) => e.stopPropagation()}
-        onChange={(e) => updateSection(sectionType, { columns: Number(e.target.value) })}
-        className="h-7 w-[68px] px-2 py-0 text-[11.5px]"
+        className="flex flex-shrink-0 overflow-hidden rounded-md border border-neutral-700"
+        role="group"
+        aria-label={`${sectionType} column layout`}
       >
-        <option value={1}>1 col</option>
-        <option value={2}>2 col</option>
-      </Select>
+        <button
+          type="button"
+          onClick={() => updateSection(sectionType, { columns: 1 })}
+          aria-pressed={section.columns === 1}
+          title="1 column"
+          className={
+            section.columns === 1
+              ? "h-7 w-5 bg-orange-700 text-[11px] text-neutral-100"
+              : "h-7 w-5 bg-neutral-800 text-[11px] text-neutral-400 transition-colors hover:text-neutral-200"
+          }
+        >
+          1
+        </button>
+        <button
+          type="button"
+          onClick={() => updateSection(sectionType, { columns: 2 })}
+          aria-pressed={section.columns === 2}
+          title="2 columns"
+          className={
+            section.columns === 2
+              ? "h-7 w-5 bg-orange-700 text-[11px] text-neutral-100"
+              : "h-7 w-5 bg-neutral-800 text-[11px] text-neutral-400 transition-colors hover:text-neutral-200"
+          }
+        >
+          2
+        </button>
+      </div>
 
       <div onClick={(e) => e.stopPropagation()}>
         <Switch

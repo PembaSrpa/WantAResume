@@ -69,7 +69,7 @@ export default function EditorPage() {
     <div className="relative h-screen overflow-hidden bg-[#0a0a0a]">
       {/* Desktop / tablet: Scales only show at >=1024px per spec (hidden on tablet+mobile) */}
       <div className="hidden lg:block">
-        <Scales />
+        <Scales variant="compact" />
       </div>
 
       {/* Desktop layout: editor fills the space between the scales. No

@@ -1,24 +1,30 @@
 "use client"
+
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion } from "motion/react"
 import { Scales } from "@/components/Scales"
 import { useResumeStore } from "@/lib/store/resume"
 import { templateSchema, type Template } from "@/lib/schema/templates"
+
 const TEMPLATES: Template[] = templateSchema.options
+
 function templateLabel(name: Template) {
   return name.charAt(0).toUpperCase() + name.slice(1)
 }
+
 export default function HomePage() {
   const router = useRouter()
   const setTemplate = useResumeStore((state) => state.setTemplate)
+
   function handleSelect(template: Template) {
     setTemplate(template)
     router.push("/editor")
   }
+
   return (
     <div className="relative min-h-screen bg-[#0a0a0a]">
-      <Scales />
+      <Scales variant="spacious" />
       <div className="mx-auto max-w-6xl px-8 py-16 md:px-16">
         <h1 className="mb-10 text-center text-2xl text-neutral-100">
           Choose a template
@@ -35,14 +41,16 @@ export default function HomePage() {
               whileHover={{ y: -4 }}
               className="group flex flex-col items-center gap-3 text-left"
             >
-              <div className="relative aspect-[210/297]  w-full overflow-hidden border border-neutral-700 bg-black transition-colors duration-300 group-hover:border-orange-700 ">
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-md border border-neutral-700 bg-neutral-800 transition-colors group-hover:border-orange-700">
+                {/* Blurred fill layer: sacrifices width/sharpness so the
+                    foreground image's full height is never cropped. */}
                 <Image
                   src={`/templates/jpg/${name}.jpg`}
                   alt=""
                   fill
                   aria-hidden="true"
                   sizes="(max-width: 768px) 50vw, 33vw"
-                  className="object-cover object-top blur-xl scale-125 opacity-30 brightness-50"
+                  className="scale-110 object-cover object-top blur-xl opacity-60"
                 />
                 <Image
                   src={`/templates/jpg/${name}.jpg`}
