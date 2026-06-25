@@ -33,10 +33,11 @@ function templateLabel(name: Template) {
 
 export default function EditorPage() {
   const router = useRouter()
-  const [editorTab, setEditorTab] = useState<EditorTab>("sections")
+  const [editorTab, setEditorTab] = useState<EditorTab>("basics")
   // Remembers which non-design EditorTab to return to when the mobile
   // bottom nav's "Edit" tab is tapped after being on "Design". Keeps
-  // BottomNavTab ("edit"/"preview"/"design") and EditorTab
+  // BottomNavTab ("edit"/"design" — no "preview", removed per
+  // TASK_MOBILE_AND_DEFAULT_TAB.md) and EditorTab
   // ("basics"/"sections"/"design") as genuinely separate vocabularies
   // instead of forcing a lossy 1:1 mapping between them.
   const [lastEditorTab, setLastEditorTab] = useState<Exclude<EditorTab, "design">>("basics")
@@ -47,10 +48,6 @@ export default function EditorPage() {
   }
 
   function handleMobileNavChange(tab: BottomNavTab) {
-    if (tab === "preview") {
-      router.push("/editor/preview")
-      return
-    }
     if (tab === "design") {
       setEditorTab("design")
       return
@@ -59,10 +56,10 @@ export default function EditorPage() {
     setEditorTab(lastEditorTab)
   }
 
-  // BottomNav's "active" prop only knows edit/preview/design; basics and
-  // sections both surface as "edit" from its perspective, which is a
-  // display-only simplification — the underlying editorTab state never
-  // loses the basics/sections distinction.
+  // BottomNav's "active" prop only knows edit/design; basics and sections
+  // both surface as "edit" from its perspective, which is a display-only
+  // simplification — the underlying editorTab state never loses the
+  // basics/sections distinction.
   const mobileNavActive: BottomNavTab = editorTab === "design" ? "design" : "edit"
 
   return (
@@ -99,10 +96,10 @@ export default function EditorPage() {
         </div>
       </div>
 
-      {/* Mobile layout: single panel driven by bottom nav. "Preview" now
-          navigates to /editor/preview instead of swapping in a panel. A
-          slim back-button row replaces the old "no top navbar" emptiness —
-          this is a single-purpose affordance, not a full navbar. */}
+      {/* Mobile layout: single panel driven by bottom nav (Edit/Design only
+          — no Preview on mobile, see TASK_MOBILE_AND_DEFAULT_TAB.md). A slim
+          back-button row replaces the old "no top navbar" emptiness — this
+          is a single-purpose affordance, not a full navbar. */}
       <div className="flex h-full flex-col md:hidden">
         <div className="flex items-center border-b border-neutral-800 px-3 py-2">
           <button

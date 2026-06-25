@@ -1,9 +1,9 @@
 "use client"
 
-import { IconEdit, IconFileText, IconPalette } from "@tabler/icons-react"
+import { IconEdit, IconPalette } from "@tabler/icons-react"
 import { cn } from "../ui/cn"
 
-export type BottomNavTab = "edit" | "preview" | "design"
+export type BottomNavTab = "edit" | "design"
 
 export interface BottomNavProps {
   active: BottomNavTab
@@ -13,7 +13,6 @@ export interface BottomNavProps {
 
 const TABS: { id: BottomNavTab; label: string; icon: typeof IconEdit }[] = [
   { id: "edit", label: "Edit", icon: IconEdit },
-  { id: "preview", label: "Preview", icon: IconFileText },
   { id: "design", label: "Design", icon: IconPalette },
 ]
 
