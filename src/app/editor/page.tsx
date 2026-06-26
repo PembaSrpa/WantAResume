@@ -17,7 +17,13 @@ import { templateSchema, type Template } from "@/lib/schema/templates"
 // own route, /editor/preview, so this route's bundle never has to load
 // @react-pdf/renderer, pdfjs-dist, or the 15 template files.
 
-type EditorTab = "basics" | "sections" | "design"
+// EditorTab is now just an alias for BottomNavTab — they're the same three
+// values (basics/sections/design) since Preview is gone from mobile
+// entirely (TASK_MOBILE_AND_DEFAULT_TAB.md) and there's no longer any
+// BottomNav-only concept that isn't also a real editor tab. Per
+// TASK_MOBILE_LAYOUT.md, this removes the old lastEditorTab/mapping-function
+// layer at the source rather than patching around the conflation again.
+type EditorTab = BottomNavTab
 
 const EDITOR_TABS: { id: EditorTab; label: string }[] = [
   { id: "basics", label: "Basics" },
@@ -34,33 +40,6 @@ function templateLabel(name: Template) {
 export default function EditorPage() {
   const router = useRouter()
   const [editorTab, setEditorTab] = useState<EditorTab>("basics")
-  // Remembers which non-design EditorTab to return to when the mobile
-  // bottom nav's "Edit" tab is tapped after being on "Design". Keeps
-  // BottomNavTab ("edit"/"design" — no "preview", removed per
-  // TASK_MOBILE_AND_DEFAULT_TAB.md) and EditorTab
-  // ("basics"/"sections"/"design") as genuinely separate vocabularies
-  // instead of forcing a lossy 1:1 mapping between them.
-  const [lastEditorTab, setLastEditorTab] = useState<Exclude<EditorTab, "design">>("basics")
-
-  function selectEditorTab(tab: EditorTab) {
-    setEditorTab(tab)
-    if (tab !== "design") setLastEditorTab(tab)
-  }
-
-  function handleMobileNavChange(tab: BottomNavTab) {
-    if (tab === "design") {
-      setEditorTab("design")
-      return
-    }
-    // tab === "edit": go back to whichever real EditorTab was last active.
-    setEditorTab(lastEditorTab)
-  }
-
-  // BottomNav's "active" prop only knows edit/design; basics and sections
-  // both surface as "edit" from its perspective, which is a display-only
-  // simplification — the underlying editorTab state never loses the
-  // basics/sections distinction.
-  const mobileNavActive: BottomNavTab = editorTab === "design" ? "design" : "edit"
 
   return (
     <div className="relative h-screen overflow-hidden bg-[#0a0a0a]">
@@ -76,7 +55,7 @@ export default function EditorPage() {
         <div className="flex-1 overflow-y-auto">
           <EditorPanelShell
             activeTab={editorTab}
-            onTabChange={selectEditorTab}
+            onTabChange={setEditorTab}
             onPreview={() => router.push("/editor/preview")}
             onBack={() => router.push("/")}
           />
@@ -89,17 +68,19 @@ export default function EditorPage() {
         <div className="flex-1 overflow-y-auto">
           <EditorPanelShell
             activeTab={editorTab}
-            onTabChange={selectEditorTab}
+            onTabChange={setEditorTab}
             onPreview={() => router.push("/editor/preview")}
             onBack={() => router.push("/")}
           />
         </div>
       </div>
 
-      {/* Mobile layout: single panel driven by bottom nav (Edit/Design only
-          — no Preview on mobile, see TASK_MOBILE_AND_DEFAULT_TAB.md). A slim
-          back-button row replaces the old "no top navbar" emptiness — this
-          is a single-purpose affordance, not a full navbar. */}
+      {/* Mobile layout: single panel driven by a 3-tab bottom nav
+          (Basics/Sections/Design — no Preview on mobile, see
+          TASK_MOBILE_AND_DEFAULT_TAB.md). BottomNav wires directly to
+          editorTab/setEditorTab now, no mapping layer needed. A slim
+          back-button row replaces the old "no top navbar" emptiness —
+          this is a single-purpose affordance, not a full navbar. */}
       <div className="flex h-full flex-col md:hidden">
         <div className="flex items-center border-b border-neutral-800 px-3 py-2">
           <button
@@ -111,12 +92,14 @@ export default function EditorPage() {
             <IconArrowLeft size={16} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto pb-16">
+        {/* px-4 horizontal padding added per TASK_MOBILE_LAYOUT.md — content
+            previously ran edge-to-edge with no margin on mobile. */}
+        <div className="flex-1 overflow-y-auto px-4 pb-16 pt-4">
           {editorTab === "basics" && <BasicsForm />}
           {editorTab === "sections" && <SectionAccordion />}
           {editorTab === "design" && <DesignPanelPlaceholder />}
         </div>
-        <BottomNav active={mobileNavActive} onChange={handleMobileNavChange} />
+        <BottomNav active={editorTab} onChange={setEditorTab} />
       </div>
     </div>
   )
@@ -191,7 +174,34 @@ function EditorPanelShell({
   )
 }
 
-// DesignPanelPlaceholder still in use — Design tab not built yet.
+// DesignPanelPlaceholder still in use — Design tab not built yet. The
+// template Select here is the only place mobile can change templates
+// (EditorPanelShell's header, where desktop/tablet's copy lives, is never
+// rendered on mobile) — see TASK_MOBILE_LAYOUT.md issue 3. When the real
+// Design tab gets built, this control should move there properly rather
+// than staying a standalone addition to the placeholder.
 function DesignPanelPlaceholder() {
-  return <p className="text-sm text-neutral-500">Design controls go here.</p>
+  const template = useResumeStore((state) => state.template)
+  const setTemplate = useResumeStore((state) => state.setTemplate)
+
+  return (
+    <div className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
+          Template
+        </span>
+        <Select
+          value={template}
+          onChange={(e) => setTemplate(e.target.value as Template)}
+        >
+          {TEMPLATES.map((name) => (
+            <option key={name} value={name}>
+              {templateLabel(name)}
+            </option>
+          ))}
+        </Select>
+      </label>
+      <p className="text-sm text-neutral-500">More design controls go here.</p>
+    </div>
+  )
 }

@@ -91,14 +91,23 @@ export function BasicsForm() {
           {basics.customFields.map((field) => (
             <div
               key={field.id}
-              className="flex items-center gap-2 rounded-md border border-neutral-700 bg-neutral-800 p-2"
+              className="flex flex-col gap-2 rounded-md border border-neutral-700 bg-neutral-800 p-2 md:flex-row md:items-center"
             >
-              <Input
-                placeholder="Icon (optional)"
-                value={field.icon}
-                onChange={(e) => updateCustomField(field.id, { icon: e.target.value })}
-                className="w-20"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Icon (optional)"
+                  value={field.icon}
+                  onChange={(e) => updateCustomField(field.id, { icon: e.target.value })}
+                  className="w-20"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeCustomField(field.id)}
+                  className="text-neutral-400 hover:text-neutral-200 md:hidden"
+                >
+                  <IconTrash size={14} />
+                </button>
+              </div>
               <Input
                 placeholder="Text"
                 value={field.text}
@@ -114,7 +123,7 @@ export function BasicsForm() {
               <button
                 type="button"
                 onClick={() => removeCustomField(field.id)}
-                className="text-neutral-400 hover:text-neutral-200"
+                className="hidden text-neutral-400 hover:text-neutral-200 md:block"
               >
                 <IconTrash size={14} />
               </button>

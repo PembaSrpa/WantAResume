@@ -206,15 +206,15 @@ function SectionHeader({
   return (
     <div
       onClick={onToggle}
-      className="flex cursor-pointer items-center gap-2.5 rounded-md px-3.5 py-2.5 transition-colors hover:bg-neutral-700/40"
+      className="flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-2.5 transition-colors hover:bg-neutral-700/40 md:gap-2.5 md:px-3.5"
     >
       <button
         type="button"
-        className="cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
+        className="flex-shrink-0 cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
         onClick={(e) => e.stopPropagation()}
         {...dragHandleProps}
       >
-        <IconGripVertical size={16} />
+        <IconGripVertical size={15} />
       </button>
 
       {renaming ? (
@@ -289,10 +289,10 @@ function SectionHeader({
           e.stopPropagation()
           onToggle()
         }}
-        className="text-neutral-400 transition-colors hover:text-neutral-100"
+        className="flex-shrink-0 text-neutral-400 transition-colors hover:text-neutral-100"
       >
         <IconChevronDown
-          size={16}
+          size={15}
           className={
             isOpen
               ? "rotate-180 transition-transform duration-150"
