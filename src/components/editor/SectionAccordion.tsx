@@ -20,6 +20,7 @@ import { CSS } from "@dnd-kit/utilities"
 import {
   IconGripVertical,
   IconChevronDown,
+  IconChevronUp,
   IconEdit,
   IconTrash,
   IconPlus,
@@ -33,6 +34,53 @@ import { ExperienceItemModal } from "./SectionItemModal"
 import { emptyItemFromFields, type GenericItem } from "./itemFields"
 import { InlineItemFields } from "./InlineItemFields"
 import { GENERIC_SECTION_FIELDS, sectionItemSummary } from "./sectionFieldConfig"
+
+// A small movement threshold before a drag activates. Without this,
+// PointerSensor (which already covers touch via the unified Pointer Events
+// API — no separate TouchSensor needed) starts listening for drag on the
+// very first touch pixel, which can fight the browser's native scroll
+// gesture on a touch device. 8px is below normal drag intent for a mouse
+// too, so this doesn't change desktop's already-working feel.
+const DRAG_ACTIVATION_CONSTRAINT = { distance: 8 }
+
+function MoveButtons({
+  onMoveUp,
+  onMoveDown,
+  size = 13,
+}: {
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  size?: number
+}) {
+  return (
+    <div className="flex flex-shrink-0 flex-col md:hidden">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onMoveUp?.()
+        }}
+        disabled={!onMoveUp}
+        aria-label="Move up"
+        className="text-neutral-500 transition-colors hover:text-neutral-200 disabled:cursor-not-allowed disabled:opacity-30"
+      >
+        <IconChevronUp size={size} />
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onMoveDown?.()
+        }}
+        disabled={!onMoveDown}
+        aria-label="Move down"
+        className="text-neutral-500 transition-colors hover:text-neutral-200 disabled:cursor-not-allowed disabled:opacity-30"
+      >
+        <IconChevronDown size={size} />
+      </button>
+    </div>
+  )
+}
 
 // Built-in section keys this accordion manages. "summary" is handled separately
 // outside this component (see plan); custom sections (UUID ids) are out of scope
@@ -68,7 +116,9 @@ export function SectionAccordion() {
     ...SECTION_TYPES.filter((type) => !mainOrder.includes(type)),
   ]
 
-  const sensors = useSensors(useSensor(PointerSensor))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT }),
+  )
 
   function handleSectionDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -76,6 +126,18 @@ export function SectionAccordion() {
     const oldIndex = sectionOrder.indexOf(active.id as SectionType)
     const newIndex = sectionOrder.indexOf(over.id as SectionType)
     reorderSections(arrayMove(sectionOrder, oldIndex, newIndex))
+  }
+
+  // Mobile fallback for drag-and-drop reordering. Touch-drag is configured
+  // (activationConstraint + touch-action) but cannot be fully verified as
+  // reliable in this environment — see TASK_MOBILE_TOUCH_DND.md. These
+  // up/down buttons are a guaranteed-working alternative, shown mobile-only
+  // (md:hidden) alongside the drag handle, not instead of it.
+  function moveSectionBy(sectionType: SectionType, delta: 1 | -1) {
+    const index = sectionOrder.indexOf(sectionType)
+    const newIndex = index + delta
+    if (newIndex < 0 || newIndex >= sectionOrder.length) return
+    reorderSections(arrayMove(sectionOrder, index, newIndex))
   }
 
   return (
@@ -87,13 +149,17 @@ export function SectionAccordion() {
     >
       <SortableContext items={sectionOrder} strategy={rectSortingStrategy}>
         <div className="grid grid-cols-1 items-start gap-2.5 lg:grid-cols-2">
-          {sectionOrder.map((sectionType) => (
+          {sectionOrder.map((sectionType, index) => (
             <SortableSectionRow
               key={sectionType}
               sectionType={sectionType}
               isOpen={openSection === sectionType}
               onToggle={() =>
                 setOpenSection((current) => (current === sectionType ? null : sectionType))
+              }
+              onMoveUp={index > 0 ? () => moveSectionBy(sectionType, -1) : undefined}
+              onMoveDown={
+                index < sectionOrder.length - 1 ? () => moveSectionBy(sectionType, 1) : undefined
               }
             />
           ))}
@@ -107,10 +173,14 @@ function SortableSectionRow({
   sectionType,
   isOpen,
   onToggle,
+  onMoveUp,
+  onMoveDown,
 }: {
   sectionType: SectionType
   isOpen: boolean
   onToggle: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: sectionType,
@@ -136,6 +206,8 @@ function SortableSectionRow({
         isOpen={isOpen}
         onToggle={onToggle}
         dragHandleProps={{ ...attributes, ...listeners }}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
       />
       <AnimatePresence initial={false}>
         {isOpen && (
@@ -159,11 +231,15 @@ function SectionHeader({
   isOpen,
   onToggle,
   dragHandleProps,
+  onMoveUp,
+  onMoveDown,
 }: {
   sectionType: SectionType
   isOpen: boolean
   onToggle: () => void
   dragHandleProps: Record<string, unknown>
+  onMoveUp?: () => void
+  onMoveDown?: () => void
 }) {
   const section = useResumeStore((state) => state.data.sections[sectionType])
   const updateSection = useResumeStore((state) => state.updateSection)
@@ -210,12 +286,14 @@ function SectionHeader({
     >
       <button
         type="button"
-        className="flex-shrink-0 cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
+        className="flex-shrink-0 cursor-grab touch-none text-neutral-500 transition-colors hover:text-neutral-300"
         onClick={(e) => e.stopPropagation()}
         {...dragHandleProps}
       >
         <IconGripVertical size={15} />
       </button>
+
+      <MoveButtons onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
 
       {renaming ? (
         <Input
@@ -343,7 +421,9 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
   // field change writes straight to the store, same pattern as BasicsForm.
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const sensors = useSensors(useSensor(PointerSensor))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT }),
+  )
   const fields = GENERIC_SECTION_FIELDS[sectionType] ?? []
 
   function handleItemDragEnd(event: DragEndEvent) {
@@ -372,7 +452,7 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
           items={items.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <InlineSortableItemRow
               key={item.id}
               id={item.id}
@@ -385,6 +465,14 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
                 removeSectionItem(sectionType, item.id)
                 if (expandedId === item.id) setExpandedId(null)
               }}
+              onMoveUp={
+                index > 0 ? () => reorderSectionItems(sectionType, index, index - 1) : undefined
+              }
+              onMoveDown={
+                index < items.length - 1
+                  ? () => reorderSectionItems(sectionType, index, index + 1)
+                  : undefined
+              }
             >
               <InlineItemFields
                 fields={fields}
@@ -416,7 +504,9 @@ function ExperienceSectionBody() {
 
   const [modalItem, setModalItem] = useState<ExperienceItem | "new" | null>(null)
 
-  const sensors = useSensors(useSensor(PointerSensor))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT }),
+  )
 
   function handleItemDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -438,13 +528,23 @@ function ExperienceSectionBody() {
           items={items.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <SortableItemRow
               key={item.id}
               id={item.id}
               summary={item.position || item.company || "Untitled"}
               onEdit={() => setModalItem(item)}
               onDelete={() => removeSectionItem("experience", item.id)}
+              onMoveUp={
+                index > 0
+                  ? () => reorderSectionItems("experience", index, index - 1)
+                  : undefined
+              }
+              onMoveDown={
+                index < items.length - 1
+                  ? () => reorderSectionItems("experience", index, index + 1)
+                  : undefined
+              }
             />
           ))}
         </SortableContext>
@@ -479,6 +579,8 @@ function InlineSortableItemRow({
   isExpanded,
   onToggle,
   onDelete,
+  onMoveUp,
+  onMoveDown,
   children,
 }: {
   id: string
@@ -486,6 +588,8 @@ function InlineSortableItemRow({
   isExpanded: boolean
   onToggle: () => void
   onDelete: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
   children: React.ReactNode
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
@@ -511,13 +615,14 @@ function InlineSortableItemRow({
       >
         <button
           type="button"
-          className="cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
+          className="cursor-grab touch-none text-neutral-500 transition-colors hover:text-neutral-300"
           onClick={(e) => e.stopPropagation()}
           {...attributes}
           {...listeners}
         >
           <IconGripVertical size={14} />
         </button>
+        <MoveButtons onMoveUp={onMoveUp} onMoveDown={onMoveDown} size={12} />
         <span className="flex-1 truncate text-[12.5px] text-neutral-200">{summary}</span>
         <IconChevronDown
           size={14}
@@ -561,11 +666,15 @@ function SortableItemRow({
   summary,
   onEdit,
   onDelete,
+  onMoveUp,
+  onMoveDown,
 }: {
   id: string
   summary: string
   onEdit: () => void
   onDelete: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
 
@@ -582,12 +691,13 @@ function SortableItemRow({
     >
       <button
         type="button"
-        className="cursor-grab text-neutral-500 transition-colors hover:text-neutral-300"
+        className="cursor-grab touch-none text-neutral-500 transition-colors hover:text-neutral-300"
         {...attributes}
         {...listeners}
       >
         <IconGripVertical size={14} />
       </button>
+      <MoveButtons onMoveUp={onMoveUp} onMoveDown={onMoveDown} size={12} />
       <span className="flex-1 truncate text-[12.5px] text-neutral-200">{summary}</span>
       <button
         type="button"
