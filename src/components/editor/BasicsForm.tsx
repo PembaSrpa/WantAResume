@@ -1,16 +1,26 @@
 "use client"
 
+import { useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
-import { IconPlus, IconTrash } from "@tabler/icons-react"
+import { IconPlus, IconTrash, IconUpload, IconUser, IconX } from "@tabler/icons-react"
 import { useResumeStore } from "@/lib/store/resume"
 import type { CustomField } from "@/lib/schema/data"
 import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
+import { fileToResizedDataUrl } from "./resizeImage"
 
 export function BasicsForm() {
   const basics = useResumeStore((state) => state.data.basics)
   const picture = useResumeStore((state) => state.data.picture)
   const updateField = useResumeStore((state) => state.updateField)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+
+  // An uploaded photo is stored as a data: URL in the same field the
+  // Picture URL text input writes to. When one is active, the text input
+  // shouldn't display/edit the raw base64 — that'd be a wall of text — so
+  // it's shown empty and disabled until the photo is removed.
+  const isUploadedPhoto = picture.url.startsWith("data:")
 
   function patchBasics(fields: Partial<typeof basics>) {
     updateField("basics", { ...basics, ...fields })
@@ -22,6 +32,31 @@ export function BasicsForm() {
 
   function patchPicture(fields: Partial<typeof picture>) {
     updateField("picture", { ...picture, ...fields })
+  }
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    // Reset so selecting the same file again still fires onChange.
+    e.target.value = ""
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please choose an image file.")
+      return
+    }
+
+    setPhotoError(null)
+    try {
+      const dataUrl = await fileToResizedDataUrl(file)
+      patchPicture({ url: dataUrl })
+    } catch {
+      setPhotoError("Could not process that image. Try a different file.")
+    }
+  }
+
+  function handleRemovePhoto() {
+    patchPicture({ url: "" })
+    setPhotoError(null)
   }
 
   function addCustomField() {
@@ -82,8 +117,65 @@ export function BasicsForm() {
       </Field>
 
       <Field label="Picture URL">
-        <Input value={picture.url} onChange={(e) => patchPicture({ url: e.target.value })} />
+        <Input
+          value={isUploadedPhoto ? "" : picture.url}
+          onChange={(e) => patchPicture({ url: e.target.value })}
+          placeholder={isUploadedPhoto ? "Using uploaded photo — remove it to paste a link" : "https://..."}
+          disabled={isUploadedPhoto}
+        />
       </Field>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
+          Photo
+        </span>
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-700 bg-neutral-800">
+            {picture.url ? (
+              <img
+                src={picture.url}
+                alt="Selected photo preview"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <IconUser size={22} className="text-neutral-500" />
+            )}
+          </div>
+
+          <Button type="button" variant="ghost" onClick={() => fileInputRef.current?.click()}>
+            <IconUpload size={14} />
+            {picture.url ? "Replace" : "Upload photo"}
+          </Button>
+
+          {picture.url && (
+            <button
+              type="button"
+              aria-label="Remove photo"
+              onClick={handleRemovePhoto}
+              className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-md border border-neutral-700 text-neutral-400 transition-colors hover:text-neutral-200"
+            >
+              <IconX size={14} />
+            </button>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoSelect}
+            className="hidden"
+          />
+        </div>
+
+        {photoError ? (
+          <p className="mt-1 text-xs text-neutral-300">{photoError}</p>
+        ) : (
+          <p className="mt-1 text-xs text-neutral-500">
+            Resized and compressed automatically before saving — no upload needed, it&apos;s
+            stored locally with the rest of your resume.
+          </p>
+        )}
+      </div>
 
       <div>
         <p className="mb-2 text-xs text-neutral-400">Custom fields</p>

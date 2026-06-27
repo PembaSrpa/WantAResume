@@ -97,7 +97,9 @@ export default function EditorPage() {
         <div className="flex-1 overflow-y-auto px-4 pb-16 pt-4">
           {editorTab === "basics" && <BasicsForm />}
           {editorTab === "sections" && <SectionAccordion />}
-          {editorTab === "design" && <DesignPanelPlaceholder />}
+          {editorTab === "design" && (
+            <DesignPanelPlaceholder onPreview={() => router.push("/editor/preview")} />
+          )}
         </div>
         <BottomNav active={editorTab} onChange={setEditorTab} />
       </div>
@@ -180,7 +182,11 @@ function EditorPanelShell({
 // rendered on mobile) — see TASK_MOBILE_LAYOUT.md issue 3. When the real
 // Design tab gets built, this control should move there properly rather
 // than staying a standalone addition to the placeholder.
-function DesignPanelPlaceholder() {
+//
+// onPreview is optional and mobile-only: desktop/tablet already has a
+// Preview button in EditorPanelShell's header, so rendering a second one
+// here would be redundant for those breakpoints.
+function DesignPanelPlaceholder({ onPreview }: { onPreview?: () => void }) {
   const template = useResumeStore((state) => state.template)
   const setTemplate = useResumeStore((state) => state.setTemplate)
 
@@ -201,6 +207,14 @@ function DesignPanelPlaceholder() {
           ))}
         </Select>
       </label>
+
+      {onPreview && (
+        <Button type="button" onClick={onPreview}>
+          <IconEye size={14} />
+          Preview
+        </Button>
+      )}
+
       <p className="text-sm text-neutral-500">More design controls go here.</p>
     </div>
   )

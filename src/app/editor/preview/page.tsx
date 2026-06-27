@@ -11,31 +11,10 @@ type GenState =
   | { status: "ready"; blobUrl: string }
   | { status: "error"; message: string }
 
-// PDF preview is desktop/tablet only (see TASK_MOBILE_AND_DEFAULT_TAB.md):
-// a phone screen is too small for a useful resume preview. This guards
-// direct URL access (typing /editor/preview manually) since removing the
-// mobile bottom nav's Preview tab only prevents in-app navigation, not a
-// typed-in URL landing here directly. Uses the same `md` breakpoint as
-// every other mobile/desktop split in this app, rather than a new one.
-function useIsMobileViewport() {
-  const [isMobile, setIsMobile] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 767px)")
-    setIsMobile(query.matches)
-    const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    query.addEventListener("change", listener)
-    return () => query.removeEventListener("change", listener)
-  }, [])
-
-  return isMobile
-}
-
 export default function PreviewPage() {
   const router = useRouter()
   const data = useResumeStore((state) => state.data)
   const template = useResumeStore((state) => state.template)
-  const isMobile = useIsMobileViewport()
 
   const [gen, setGen] = useState<GenState>({ status: "loading" })
 
@@ -63,10 +42,7 @@ export default function PreviewPage() {
   }, [])
 
   useEffect(() => {
-    // Skip generating the PDF at all on mobile — no point doing the work
-    // (and pulling in the heavy @react-pdf/renderer dependency tree) for a
-    // page we're about to redirect away from.
-    if (isMobile === false) generate()
+    generate()
     return () => {
       // Revoke on unmount to avoid leaking blob URLs across navigations.
       setGen((current) => {
@@ -74,13 +50,7 @@ export default function PreviewPage() {
         return current
       })
     }
-  }, [generate, isMobile])
-
-  useEffect(() => {
-    if (isMobile !== true) return
-    const timer = setTimeout(() => router.replace("/editor"), 1400)
-    return () => clearTimeout(timer)
-  }, [isMobile, router])
+  }, [generate])
 
   function handleExport() {
     if (gen.status !== "ready") return
@@ -88,24 +58,6 @@ export default function PreviewPage() {
     a.href = gen.blobUrl
     a.download = "resume.pdf"
     a.click()
-  }
-
-  // isMobile === null means the media query hasn't resolved yet (first
-  // render, before the effect runs) — render nothing rather than flash the
-  // desktop preview UI for a frame on what might turn out to be mobile.
-  if (isMobile === null) {
-    return <div className="h-screen bg-[#0a0a0a]" />
-  }
-
-  if (isMobile) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-[#0a0a0a] p-6 text-center">
-        <p className="text-sm text-neutral-300">
-          Preview works best on a larger screen.
-        </p>
-        <p className="text-xs text-neutral-500">Taking you back to the editor…</p>
-      </div>
-    )
   }
 
   return (

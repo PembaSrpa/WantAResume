@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SectionAccordion } from "@/components/editor/SectionAccordion"
 
@@ -10,14 +10,16 @@ function getTitleButton(name: string) {
 }
 
 describe("Two-column section grid", () => {
-  it("an open section spans the full grid width (lg:col-span-2), a closed one does not", () => {
+  it("an open section spans the full grid width (lg:col-span-2), a closed one does not", async () => {
+    const user = userEvent.setup()
     render(<SectionAccordion />)
 
-    // "experience" is open by default per SectionAccordion's initial state.
+    // No section is open by default — open "experience" explicitly.
     const experienceTitle = getTitleButton("experience")
+    await user.click(experienceTitle)
     const experienceRow = experienceTitle.closest('[class*="rounded-md border"]')
     expect(experienceRow).not.toBeNull()
-    expect(experienceRow!.className).toContain("lg:col-span-2")
+    await waitFor(() => expect(experienceRow!.className).toContain("lg:col-span-2"))
 
     const profilesTitle = getTitleButton("profiles")
     const profilesRow = profilesTitle.closest('[class*="rounded-md border"]')

@@ -104,12 +104,15 @@ describe("Mobile drag fallback: item-level move buttons (Experience)", () => {
     const user = userEvent.setup()
     render(<SectionAccordion />)
 
+    // No section is open by default — open Experience first.
+    await user.click(getTitleButton("experience"))
+
     // Experience's "Add item" opens a modal that only commits to the store
     // on Save, not Cancel (confirmed in SectionAccordion.tsx: handleAddItem
     // for generic sections writes immediately, but Experience uses
     // setModalItem("new") + ExperienceItemModal's onSave). So two items
     // need two real Save clicks, not Cancel.
-    const addItemButton = screen.getByRole("button", { name: /^add item$/i })
+    const addItemButton = await screen.findByRole("button", { name: /^add item$/i })
     await user.click(addItemButton)
     await user.type(screen.getByLabelText(/company/i), "First Co")
     await user.click(screen.getByRole("button", { name: /^save$/i }))
@@ -144,7 +147,10 @@ describe("Mobile drag fallback: item-level move buttons (Experience)", () => {
     const user = userEvent.setup()
     render(<SectionAccordion />)
 
-    const addItemButton = screen.getByRole("button", { name: /^add item$/i })
+    // No section is open by default — open Experience first.
+    await user.click(getTitleButton("experience"))
+
+    const addItemButton = await screen.findByRole("button", { name: /^add item$/i })
     await user.click(addItemButton)
     await user.type(screen.getByLabelText(/company/i), "First Co")
     await user.click(screen.getByRole("button", { name: /^save$/i }))

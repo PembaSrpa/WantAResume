@@ -101,7 +101,7 @@ const SECTION_TYPES: SectionType[] = [
 ]
 
 export function SectionAccordion() {
-  const [openSection, setOpenSection] = useState<SectionType | null>("experience")
+  const [openSection, setOpenSection] = useState<SectionType | null>(null)
 
   const mainOrder = useResumeStore((state) => state.data.metadata.layout.pages[0]?.main ?? [])
   const reorderSections = useResumeStore((state) => state.reorderSections)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { render, screen, waitForElementToBeRemoved } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SectionAccordion } from "@/components/editor/SectionAccordion"
 
@@ -48,20 +48,26 @@ describe("SectionHeader rename/expand click disambiguation", () => {
     const user = userEvent.setup()
     render(<SectionAccordion />)
 
-    expect(screen.getByRole("button", { name: /^add item$/i })).toBeInTheDocument()
-
     const experienceTitle = getTitleButton("experience")
     const row = experienceTitle.closest("div")
     expect(row).not.toBeNull()
 
+    // No section is open by default — open Experience first, then confirm
+    // clicking elsewhere on the row (not the title) still collapses it.
+    await user.click(experienceTitle)
+    expect(await screen.findByRole("button", { name: /^add item$/i })).toBeInTheDocument()
+
     await user.click(row!)
 
-    // AnimatePresence's exit animation means the element isn't removed
-    // synchronously on click — wait for it to actually disappear rather
-    // than asserting immediately, which would be a false negative caused
-    // by jsdom's lack of a real animation-frame loop, not a real bug.
-    await waitForElementToBeRemoved(() =>
-      screen.queryByRole("button", { name: /^add item$/i }),
-    )
+    // AnimatePresence's exit animation means removal isn't always
+    // synchronous — wait for the element to be gone rather than asserting
+    // immediately, which would be a false negative caused by jsdom's lack
+    // of a real animation-frame loop, not a real bug. waitFor (rather than
+    // waitForElementToBeRemoved) tolerates the element already being gone
+    // by the time this runs, which can happen once the open state itself
+    // is awaited via findByRole above.
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /^add item$/i })).not.toBeInTheDocument()
+    })
   })
 })
