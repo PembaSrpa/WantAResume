@@ -1,221 +1,120 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { IconEye, IconArrowLeft } from "@tabler/icons-react"
-import { Scales } from "@/components/Scales"
-import { BottomNav, type BottomNavTab } from "@/components/mobile/BottomNav"
-import { SectionAccordion } from "@/components/editor/SectionAccordion"
-import { BasicsForm } from "@/components/editor/BasicsForm"
-import { Button } from "@/components/ui/Button"
-import { Select } from "@/components/ui/Select"
+import { IconArrowLeft, IconDownload, IconRefresh } from "@tabler/icons-react"
 import { useResumeStore } from "@/lib/store/resume"
-import { templateSchema, type Template } from "@/lib/schema/templates"
+import { Button } from "@/components/ui/Button"
 
-// Editing only. PreviewPanel/PDFCanvas/PDF.js are NOT imported anywhere in
-// this file or its tree — see TASK_PREVIEW_SPLIT.md. Preview lives at its
-// own route, /editor/preview, so this route's bundle never has to load
-// @react-pdf/renderer, pdfjs-dist, or the 15 template files.
+type GenState =
+  | { status: "loading" }
+  | { status: "ready"; blobUrl: string }
+  | { status: "error"; message: string }
 
-// EditorTab is now just an alias for BottomNavTab — they're the same three
-// values (basics/sections/design) since Preview is gone from mobile
-// entirely (TASK_MOBILE_AND_DEFAULT_TAB.md) and there's no longer any
-// BottomNav-only concept that isn't also a real editor tab. Per
-// TASK_MOBILE_LAYOUT.md, this removes the old lastEditorTab/mapping-function
-// layer at the source rather than patching around the conflation again.
-type EditorTab = BottomNavTab
-
-const EDITOR_TABS: { id: EditorTab; label: string }[] = [
-  { id: "basics", label: "Basics" },
-  { id: "sections", label: "Sections" },
-  { id: "design", label: "Design" },
-]
-
-const TEMPLATES = templateSchema.options
-
-function templateLabel(name: Template) {
-  return name.charAt(0).toUpperCase() + name.slice(1)
-}
-
-export default function EditorPage() {
+// PDF preview is reachable from both desktop/tablet (EditorPanelShell's
+// Preview button) and mobile (the Design tab's Preview button — see
+// TASK_PREVIEW_AND_PHOTO_UPLOAD.md). There is no mobile redirect/guard here
+// anymore: an earlier version of this route bounced mobile viewports back
+// to /editor on the theory that direct URL access should be discouraged,
+// but with a legitimate in-app path now existing, that guard no longer
+// makes sense — it would block the very button this task added.
+export default function PreviewPage() {
   const router = useRouter()
-  const [editorTab, setEditorTab] = useState<EditorTab>("basics")
-
-  return (
-    <div className="relative h-screen overflow-hidden bg-[#0a0a0a]">
-      {/* Desktop / tablet: Scales only show at >=1024px per spec (hidden on tablet+mobile) */}
-      <div className="hidden lg:block">
-        <Scales variant="compact" />
-      </div>
-
-      {/* Desktop layout: editor fills the space between the scales. No
-          preview column anymore — see TASK_PREVIEW_SPLIT.md. */}
-      <div className="hidden h-full lg:flex">
-        <div className="w-[5%] flex-shrink-0" />
-        <div className="flex-1 overflow-y-auto">
-          <EditorPanelShell
-            activeTab={editorTab}
-            onTabChange={setEditorTab}
-            onPreview={() => router.push("/editor/preview")}
-            onBack={() => router.push("/")}
-          />
-        </div>
-        <div className="w-[5%] flex-shrink-0" />
-      </div>
-
-      {/* Tablet layout: same single-panel editor, no Scales. */}
-      <div className="hidden h-full md:flex lg:hidden">
-        <div className="flex-1 overflow-y-auto">
-          <EditorPanelShell
-            activeTab={editorTab}
-            onTabChange={setEditorTab}
-            onPreview={() => router.push("/editor/preview")}
-            onBack={() => router.push("/")}
-          />
-        </div>
-      </div>
-
-      {/* Mobile layout: single panel driven by a 3-tab bottom nav
-          (Basics/Sections/Design — no Preview on mobile, see
-          TASK_MOBILE_AND_DEFAULT_TAB.md). BottomNav wires directly to
-          editorTab/setEditorTab now, no mapping layer needed. A slim
-          back-button row replaces the old "no top navbar" emptiness —
-          this is a single-purpose affordance, not a full navbar. */}
-      <div className="flex h-full flex-col md:hidden">
-        <div className="flex items-center border-b border-neutral-800 px-3 py-2">
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="flex items-center gap-1.5 px-1 py-1 text-neutral-400 transition-colors hover:text-neutral-100"
-            aria-label="Back to homepage"
-          >
-            <IconArrowLeft size={16} />
-          </button>
-        </div>
-        {/* px-4 horizontal padding added per TASK_MOBILE_LAYOUT.md — content
-            previously ran edge-to-edge with no margin on mobile. */}
-        <div className="flex-1 overflow-y-auto px-4 pb-16 pt-4">
-          {editorTab === "basics" && <BasicsForm />}
-          {editorTab === "sections" && <SectionAccordion />}
-          {editorTab === "design" && (
-            <DesignPanelPlaceholder onPreview={() => router.push("/editor/preview")} />
-          )}
-        </div>
-        <BottomNav active={editorTab} onChange={setEditorTab} />
-      </div>
-    </div>
-  )
-}
-
-function EditorPanelShell({
-  activeTab,
-  onTabChange,
-  onPreview,
-  onBack,
-}: {
-  activeTab: EditorTab
-  onTabChange: (tab: EditorTab) => void
-  onPreview: () => void
-  onBack: () => void
-}) {
+  const data = useResumeStore((state) => state.data)
   const template = useResumeStore((state) => state.template)
-  const setTemplate = useResumeStore((state) => state.setTemplate)
+
+  const [gen, setGen] = useState<GenState>({ status: "loading" })
+
+  const generate = useCallback(async () => {
+    setGen({ status: "loading" })
+    try {
+      // Always dynamically imported — a static top-level import of
+      // generate-pdf.tsx would crash Next.js SSR, and would also pull
+      // @react-pdf/renderer + all 15 templates into every route that
+      // imports this file. Confined to this route only, on purpose.
+      const { generatePdfBlob } = await import("@/lib/generate-pdf")
+      const blob = await generatePdfBlob(data, template)
+      const blobUrl = URL.createObjectURL(blob)
+      setGen({ status: "ready", blobUrl })
+    } catch (err) {
+      setGen({
+        status: "error",
+        message: err instanceof Error ? err.message : "Failed to generate PDF.",
+      })
+    }
+    // Generated once on mount per the original task's guidance. data/template
+    // aren't dependencies on purpose — re-generating on every keystroke
+    // elsewhere in the app would defeat the point of a dedicated route.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    generate()
+    return () => {
+      // Revoke on unmount to avoid leaking blob URLs across navigations.
+      setGen((current) => {
+        if (current.status === "ready") URL.revokeObjectURL(current.blobUrl)
+        return current
+      })
+    }
+  }, [generate])
+
+  function handleExport() {
+    if (gen.status !== "ready") return
+    const a = document.createElement("a")
+    a.href = gen.blobUrl
+    a.download = "resume.pdf"
+    a.click()
+  }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-neutral-800 px-4">
-        <button
+    <div className="flex h-screen flex-col bg-[#0a0a0a]">
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-neutral-800 p-3">
+        <Button type="button" variant="ghost" onClick={() => router.push("/editor")}>
+          <IconArrowLeft size={14} />
+          Edit
+        </Button>
+        <Button type="button" onClick={generate}>
+          <IconRefresh size={14} />
+          Regenerate
+        </Button>
+        <Button
           type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 rounded-md px-1.5 py-2 text-neutral-400 transition-colors hover:text-neutral-100"
-          aria-label="Back to homepage"
+          onClick={handleExport}
+          disabled={gen.status !== "ready"}
+          className="ml-auto"
         >
-          <IconArrowLeft size={17} />
-        </button>
-
-        <div className="flex flex-1 gap-1 py-2">
-          {EDITOR_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onTabChange(tab.id)}
-              className={
-                activeTab === tab.id
-                  ? "rounded-t-md border-b-2 border-orange-700 bg-neutral-900 px-3.5 py-2 text-[13px] font-medium tracking-[0.01em] text-neutral-100"
-                  : "rounded-t-md border-b-2 border-transparent px-3.5 py-2 text-[13px] text-neutral-500 transition-colors hover:text-neutral-300"
-              }
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <Select
-          value={template}
-          onChange={(e) => setTemplate(e.target.value as Template)}
-          className="h-8 w-32 py-0 text-xs"
-        >
-          {TEMPLATES.map((name) => (
-            <option key={name} value={name}>
-              {templateLabel(name)}
-            </option>
-          ))}
-        </Select>
-
-        <Button type="button" onClick={onPreview} className="my-2">
-          <IconEye size={14} />
-          Preview
+          <IconDownload size={14} />
+          Export PDF
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto p-5">
-        {activeTab === "basics" && <BasicsForm />}
-        {activeTab === "sections" && <SectionAccordion />}
-        {activeTab === "design" && <DesignPanelPlaceholder />}
+
+      <div className="flex-1 overflow-hidden">
+        {gen.status === "loading" && (
+          <div className="flex h-full items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-700 border-t-neutral-300" />
+              <p className="text-sm text-neutral-300">Generating preview…</p>
+            </div>
+          </div>
+        )}
+
+        {gen.status === "error" && (
+          <div className="flex h-full items-center justify-center p-4">
+            <p className="max-w-xs text-center text-sm text-neutral-500">
+              Could not generate preview: {gen.message}
+            </p>
+          </div>
+        )}
+
+        {gen.status === "ready" && (
+          <iframe
+            src={gen.blobUrl}
+            title="Resume PDF preview"
+            className="h-full w-full border-0"
+          />
+        )}
       </div>
-    </div>
-  )
-}
-
-// DesignPanelPlaceholder still in use — Design tab not built yet. The
-// template Select here is the only place mobile can change templates
-// (EditorPanelShell's header, where desktop/tablet's copy lives, is never
-// rendered on mobile) — see TASK_MOBILE_LAYOUT.md issue 3. When the real
-// Design tab gets built, this control should move there properly rather
-// than staying a standalone addition to the placeholder.
-//
-// onPreview is optional and mobile-only: desktop/tablet already has a
-// Preview button in EditorPanelShell's header, so rendering a second one
-// here would be redundant for those breakpoints.
-function DesignPanelPlaceholder({ onPreview }: { onPreview?: () => void }) {
-  const template = useResumeStore((state) => state.template)
-  const setTemplate = useResumeStore((state) => state.setTemplate)
-
-  return (
-    <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
-          Template
-        </span>
-        <Select
-          value={template}
-          onChange={(e) => setTemplate(e.target.value as Template)}
-        >
-          {TEMPLATES.map((name) => (
-            <option key={name} value={name}>
-              {templateLabel(name)}
-            </option>
-          ))}
-        </Select>
-      </label>
-
-      {onPreview && (
-        <Button type="button" onClick={onPreview}>
-          <IconEye size={14} />
-          Preview
-        </Button>
-      )}
-
-      <p className="text-sm text-neutral-500">More design controls go here.</p>
     </div>
   )
 }

@@ -11,6 +11,13 @@ type GenState =
   | { status: "ready"; blobUrl: string }
   | { status: "error"; message: string }
 
+// PDF preview is reachable from both desktop/tablet (EditorPanelShell's
+// Preview button) and mobile (the Design tab's Preview button — see
+// TASK_PREVIEW_AND_PHOTO_UPLOAD.md). There is no mobile redirect/guard here
+// anymore: an earlier version of this route bounced mobile viewports back
+// to /editor on the theory that direct URL access should be discouraged,
+// but with a legitimate in-app path now existing, that guard no longer
+// makes sense — it would block the very button this task added.
 export default function PreviewPage() {
   const router = useRouter()
   const data = useResumeStore((state) => state.data)
@@ -35,9 +42,9 @@ export default function PreviewPage() {
         message: err instanceof Error ? err.message : "Failed to generate PDF.",
       })
     }
-    // Generated once on mount per the task's guidance. data/template aren't
-    // dependencies on purpose — re-generating on every keystroke elsewhere
-    // in the app would defeat the point of a dedicated preview route.
+    // Generated once on mount per the original task's guidance. data/template
+    // aren't dependencies on purpose — re-generating on every keystroke
+    // elsewhere in the app would defeat the point of a dedicated route.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -62,7 +69,7 @@ export default function PreviewPage() {
 
   return (
     <div className="flex h-screen flex-col bg-[#0a0a0a]">
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-neutral-800 p-3">
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-neutral-800 p-3">
         <Button type="button" variant="ghost" onClick={() => router.push("/editor")}>
           <IconArrowLeft size={14} />
           Edit

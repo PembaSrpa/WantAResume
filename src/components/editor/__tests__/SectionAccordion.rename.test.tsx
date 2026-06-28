@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitForElementToBeRemoved } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SectionAccordion } from "@/components/editor/SectionAccordion"
 
@@ -48,26 +48,30 @@ describe("SectionHeader rename/expand click disambiguation", () => {
     const user = userEvent.setup()
     render(<SectionAccordion />)
 
+    // No section opens by default anymore (see
+    // SectionAccordion.defaultcollapsed.test.tsx) — confirm clicking the
+    // row opens it first, then confirm clicking again closes it, covering
+    // both directions instead of assuming an initial open state.
+    expect(screen.queryByRole("button", { name: /^add item$/i })).not.toBeInTheDocument()
+
     const experienceTitle = getTitleButton("experience")
     const row = experienceTitle.closest("div")
     expect(row).not.toBeNull()
 
-    // No section is open by default — open Experience first, then confirm
-    // clicking elsewhere on the row (not the title) still collapses it.
-    await user.click(experienceTitle)
+    await user.click(row!)
     expect(await screen.findByRole("button", { name: /^add item$/i })).toBeInTheDocument()
 
     await user.click(row!)
 
-    // AnimatePresence's exit animation means removal isn't always
-    // synchronous — wait for the element to be gone rather than asserting
-    // immediately, which would be a false negative caused by jsdom's lack
-    // of a real animation-frame loop, not a real bug. waitFor (rather than
-    // waitForElementToBeRemoved) tolerates the element already being gone
-    // by the time this runs, which can happen once the open state itself
-    // is awaited via findByRole above.
-    await waitFor(() => {
-      expect(screen.queryByRole("button", { name: /^add item$/i })).not.toBeInTheDocument()
-    })
+    // AnimatePresence's exit animation may or may not have resolved
+    // synchronously by this point depending on the test environment, so
+    // check directly rather than assume waitForElementToBeRemoved's
+    // precondition (the element still existing right now) holds.
+    const stillPresent = screen.queryByRole("button", { name: /^add item$/i })
+    if (stillPresent) {
+      await waitForElementToBeRemoved(stillPresent)
+    } else {
+      expect(stillPresent).not.toBeInTheDocument()
+    }
   })
 })

@@ -14,9 +14,15 @@ describe("Two-column section grid", () => {
     const user = userEvent.setup()
     render(<SectionAccordion />)
 
-    // No section is open by default — open "experience" explicitly.
+    // No section opens by default anymore (see
+    // SectionAccordion.defaultcollapsed.test.tsx) — open experience
+    // explicitly to test the breakout-on-open behavior. The title's click
+    // handler uses a 250ms timer to disambiguate single vs. double click,
+    // so wait for the real post-toggle effect (lg:col-span-2 appearing on
+    // the row), not just the click event resolving.
     const experienceTitle = getTitleButton("experience")
     await user.click(experienceTitle)
+
     const experienceRow = experienceTitle.closest('[class*="rounded-md border"]')
     expect(experienceRow).not.toBeNull()
     await waitFor(() => expect(experienceRow!.className).toContain("lg:col-span-2"))

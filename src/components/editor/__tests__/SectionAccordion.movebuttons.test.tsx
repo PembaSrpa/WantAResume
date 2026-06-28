@@ -104,15 +104,19 @@ describe("Mobile drag fallback: item-level move buttons (Experience)", () => {
     const user = userEvent.setup()
     render(<SectionAccordion />)
 
-    // No section is open by default — open Experience first.
+    // No section opens by default anymore — open Experience explicitly.
+    // The title's click handler uses a 250ms timer to disambiguate a
+    // single click (toggle) from a double click (rename), so awaiting the
+    // click event itself isn't enough — wait for the actual post-toggle
+    // effect (the "Add item" button appearing) before proceeding.
     await user.click(getTitleButton("experience"))
+    const addItemButton = await screen.findByRole("button", { name: /^add item$/i })
 
     // Experience's "Add item" opens a modal that only commits to the store
     // on Save, not Cancel (confirmed in SectionAccordion.tsx: handleAddItem
     // for generic sections writes immediately, but Experience uses
     // setModalItem("new") + ExperienceItemModal's onSave). So two items
     // need two real Save clicks, not Cancel.
-    const addItemButton = await screen.findByRole("button", { name: /^add item$/i })
     await user.click(addItemButton)
     await user.type(screen.getByLabelText(/company/i), "First Co")
     await user.click(screen.getByRole("button", { name: /^save$/i }))
@@ -147,7 +151,9 @@ describe("Mobile drag fallback: item-level move buttons (Experience)", () => {
     const user = userEvent.setup()
     render(<SectionAccordion />)
 
-    // No section is open by default — open Experience first.
+    // No section opens by default anymore — open Experience explicitly.
+    // Same timing note as the test above: wait for the real post-toggle
+    // effect, not just the click event resolving.
     await user.click(getTitleButton("experience"))
 
     const addItemButton = await screen.findByRole("button", { name: /^add item$/i })
