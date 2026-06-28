@@ -3,10 +3,21 @@
 // and `template` selection to localStorage under the key "resume-builder".
 //
 // Section/item mutators (added after initial scaffold) operate on data.sections and, for
-// section ordering, on data.layout.pages[0].main only. KNOWN LIMITATION: the editor UI has
-// no concept yet of multiple pages or main/sidebar column placement — everything is assumed
-// to live in pages[0].main. reorderSections and this store will need real rework if/when
-// multi-page layout or sidebar placement becomes an actual editor feature.
+// section ordering, on data.layout.pages[0].main/sidebar. KNOWN LIMITATION: the editor UI has
+// no way to move a section between main and sidebar -- SectionAccordion presents one flat,
+// reorderable list of all built-in section types regardless of which column they're actually
+// in. reorderSections (below) respects each section's CURRENT main/sidebar placement and only
+// reorders within it; it does not (and structurally cannot, without a real UI for it) let the
+// accordion's reorder action move a section between columns.
+//
+// BUG FIX (see reorderSections below): this used to write the accordion's entire flat list
+// directly into pages[0].main on every reorder, while never touching pages[0].sidebar. That
+// corrupted layout the moment any section was ever reordered: every sidebar-type section
+// (skills, languages, certifications, awards, interests, publications) ended up duplicated
+// into both main and sidebar at once (confirmed via real generated PDF output -- duplicate
+// content, plus a React "duplicate key" warning from the renderer), and "summary" (which lives
+// in main but isn't part of the accordion's managed list) got silently dropped from main
+// entirely on first reorder, since the accordion's list never includes it.
 
 import type { ResumeData, SectionType, SectionData } from "../schema/data";
 import type { Template } from "../schema/templates";
@@ -89,6 +100,37 @@ export const useResumeStore = create<ResumeStore>()(
 				set((state) => {
 					const pages = state.data.metadata.layout.pages;
 					const [firstPage, ...restPages] = pages;
+
+					const sidebarSet = new Set(firstPage.sidebar);
+					const newOrderSet = new Set(newOrder);
+
+					// Split the accordion's flat list back into main/sidebar by each
+					// section's CURRENT placement -- the accordion shows one merged
+					// list for convenience, but that's a UI affordance only; there's
+					// no control anywhere for actually moving a section between
+					// columns, so a reorder action should only ever change order
+					// *within* a column, never membership.
+					const newMain: string[] = [];
+					const newSidebar: string[] = [];
+					for (const id of newOrder) {
+						if (sidebarSet.has(id)) newSidebar.push(id);
+						else newMain.push(id);
+					}
+
+					// Anything reorderSections' caller doesn't manage -- "summary",
+					// custom-section UUIDs, or any id missing from newOrder -- stays
+					// in its exact original slot instead of being dropped. Only ids
+					// that are actually part of newOrder get replaced, in sequence.
+					const rebuild = (original: string[], replacements: string[]) => {
+						const queue = [...replacements];
+						const result = original.map((id) => {
+							if (!newOrderSet.has(id)) return id;
+							const next = queue.shift();
+							return next ?? id;
+						});
+						return [...result, ...queue];
+					};
+
 					return {
 						data: {
 							...state.data,
@@ -96,7 +138,14 @@ export const useResumeStore = create<ResumeStore>()(
 								...state.data.metadata,
 								layout: {
 									...state.data.metadata.layout,
-									pages: [{ ...firstPage, main: newOrder }, ...restPages],
+									pages: [
+										{
+											...firstPage,
+											main: rebuild(firstPage.main, newMain),
+											sidebar: rebuild(firstPage.sidebar, newSidebar),
+										},
+										...restPages,
+									],
 								},
 							},
 						},
@@ -161,6 +210,40 @@ export const useResumeStore = create<ResumeStore>()(
 		}),
 		{
 			name: "resume-builder",
+			version: 1,
+			migrate: (persistedState, version) => {
+				const state = persistedState as { data?: ResumeData; template?: Template } | null;
+				const firstPage = state?.data?.metadata?.layout?.pages?.[0];
+
+				if (version < 1 && firstPage) {
+					// One-time cleanup for data corrupted by the pre-fix
+					// reorderSections, which wrote every section type into
+					// pages[0].main on any reorder while leaving pages[0].sidebar
+					// untouched -- duplicating every sidebar-type section into
+					// both arrays. sidebar was never mutated by that bug, so it's
+					// reliable ground truth: anything also present there gets
+					// removed from main.
+					const [page, ...restPages] = state!.data!.metadata.layout.pages;
+					const sidebarSet = new Set(page.sidebar);
+					const cleanedMain = page.main.filter((id) => !sidebarSet.has(id));
+
+					return {
+						...state,
+						data: {
+							...state!.data!,
+							metadata: {
+								...state!.data!.metadata,
+								layout: {
+									...state!.data!.metadata.layout,
+									pages: [{ ...page, main: cleanedMain }, ...restPages],
+								},
+							},
+						},
+					};
+				}
+
+				return state;
+			},
 			partialize: (state) => ({
 				data: state.data,
 				template: state.template,
