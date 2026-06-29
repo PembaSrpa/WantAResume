@@ -1,7 +1,3 @@
-// Ported from Reactive Resume (packages/schema/src/resume/default.ts)
-// Original project: https://github.com/AmruthPillai/Reactive-Resume — MIT License
-// Copyright (c) 2026 Amruth Pillai
-
 import type { ResumeData } from "./data";
 
 export const defaultResumeData: ResumeData = {
