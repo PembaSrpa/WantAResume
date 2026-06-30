@@ -23,7 +23,7 @@ import { LevelSlider } from "./LevelSlider"
 
 export type FieldConfig =
   | { kind: "text"; key: string; label: string; placeholder?: string }
-  | { kind: "textarea-rich"; key: string; label: string }
+  | { kind: "textarea-rich"; key: string; label: string; placeholder?: string }
   | { kind: "website"; key: string; urlLabel?: string }
   | { kind: "level"; key: string; label: string }
   | { kind: "tags"; key: string; label: string }
@@ -80,6 +80,7 @@ export function FieldRenderer({
         <Field label={field.label}>
           <Textarea
             rows={3}
+            placeholder={field.placeholder}
             value={(value as string) ?? ""}
             onChange={(e) => onChange(e.target.value)}
           />

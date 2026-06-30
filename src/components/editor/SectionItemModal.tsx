@@ -88,18 +88,21 @@ export function ExperienceItemModal({
               <Input
                 value={draft.company}
                 onChange={(e) => patch({ company: e.target.value })}
+                placeholder="Acme Inc."
               />
             </Field>
             <Field label="Position">
               <Input
                 value={draft.position}
                 onChange={(e) => patch({ position: e.target.value })}
+                placeholder="Senior Software Engineer"
               />
             </Field>
             <Field label="Location">
               <Input
                 value={draft.location}
                 onChange={(e) => patch({ location: e.target.value })}
+                placeholder="San Francisco, CA"
               />
             </Field>
             <Field label="Period">
@@ -114,12 +117,14 @@ export function ExperienceItemModal({
               <Input
                 value={draft.website.url}
                 onChange={(e) => patchWebsite({ url: e.target.value })}
+                placeholder="https://acme.com"
               />
             </Field>
             <Field label="Website label">
               <Input
                 value={draft.website.label}
                 onChange={(e) => patchWebsite({ label: e.target.value })}
+                placeholder="Company site"
               />
             </Field>
             <label className="flex items-center gap-2 text-xs text-neutral-300">
@@ -137,6 +142,7 @@ export function ExperienceItemModal({
                 rows={3}
                 value={draft.description}
                 onChange={(e) => patch({ description: e.target.value })}
+                placeholder="Led a team of 5 engineers building..."
               />
               <p className="mt-1 text-[11px] text-neutral-500">Accepts HTML.</p>
             </Field>
@@ -251,12 +257,14 @@ function RoleModal({
             <Input
               value={draft.position}
               onChange={(e) => setDraft((c) => ({ ...c, position: e.target.value }))}
+              placeholder="Engineering Manager"
             />
           </Field>
           <Field label="Period">
             <Input
               value={draft.period}
               onChange={(e) => setDraft((c) => ({ ...c, period: e.target.value }))}
+              placeholder="e.g. Jan 2023 — Present"
             />
           </Field>
           <Field label="Description">
@@ -264,6 +272,7 @@ function RoleModal({
               rows={2}
               value={draft.description}
               onChange={(e) => setDraft((c) => ({ ...c, description: e.target.value }))}
+              placeholder="What changed in this role..."
             />
           </Field>
         </div>

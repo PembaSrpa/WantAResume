@@ -77,13 +77,18 @@ export function BasicsForm() {
   return (
     <div className="flex flex-col gap-[18px]">
       <Field label="Name">
-        <Input value={basics.name} onChange={(e) => patchBasics({ name: e.target.value })} />
+        <Input
+          value={basics.name}
+          onChange={(e) => patchBasics({ name: e.target.value })}
+          placeholder="Jane Doe"
+        />
       </Field>
 
       <Field label="Headline">
         <Input
           value={basics.headline}
           onChange={(e) => patchBasics({ headline: e.target.value })}
+          placeholder="Senior Product Designer"
         />
       </Field>
 
@@ -92,27 +97,38 @@ export function BasicsForm() {
           type="email"
           value={basics.email}
           onChange={(e) => patchBasics({ email: e.target.value })}
+          placeholder="jane@example.com"
         />
       </Field>
 
       <Field label="Phone">
-        <Input value={basics.phone} onChange={(e) => patchBasics({ phone: e.target.value })} />
+        <Input
+          value={basics.phone}
+          onChange={(e) => patchBasics({ phone: e.target.value })}
+          placeholder="+1 (555) 123-4567"
+        />
       </Field>
 
       <Field label="Location">
         <Input
           value={basics.location}
           onChange={(e) => patchBasics({ location: e.target.value })}
+          placeholder="San Francisco, CA"
         />
       </Field>
 
       <Field label="Website URL">
-        <Input value={basics.website.url} onChange={(e) => patchWebsite({ url: e.target.value })} />
+        <Input
+          value={basics.website.url}
+          onChange={(e) => patchWebsite({ url: e.target.value })}
+          placeholder="https://janedoe.com"
+        />
       </Field>
       <Field label="Website label">
         <Input
           value={basics.website.label}
           onChange={(e) => patchWebsite({ label: e.target.value })}
+          placeholder="Portfolio"
         />
       </Field>
 
