@@ -25,6 +25,12 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { defaultResumeData } from "../schema/defaults";
 
+// Matches editor/page.tsx's EditorTab/BottomNavTab vocabulary exactly. Kept
+// as a separate type here (not imported from the UI layer) since the store
+// shouldn't depend on UI code -- the UI layer's EditorTab is structurally
+// identical and TypeScript will accept either at call sites.
+export type EditorResetTab = "basics" | "sections" | "design";
+
 type ResumeStore = {
 	data: ResumeData;
 	template: Template;
@@ -32,6 +38,13 @@ type ResumeStore = {
 	updateField: <K extends keyof ResumeData>(key: K, value: ResumeData[K]) => void;
 	setTemplate: (template: Template) => void;
 	resetToDefault: () => void;
+
+	// Resets only the fields owned by one editor tab back to real schema
+	// defaults, leaving the other two tabs' data completely untouched.
+	// "basics" -> data.basics, data.picture
+	// "sections" -> data.sections, data.summary, data.customSections
+	// "design" -> data.metadata.design, data.metadata.typography, data.metadata.page
+	resetTab: (tab: EditorResetTab) => void;
 
 	// Section-level mutators (operate on data.sections)
 	updateSection: <T extends SectionType>(
@@ -80,6 +93,48 @@ export const useResumeStore = create<ResumeStore>()(
 				set({
 					data: defaultResumeData(),
 					template: defaultTemplate,
+				}),
+
+			resetTab: (tab) =>
+				set((state) => {
+					// Fresh call every time -- defaultResumeData() deep-clones, so
+					// this never risks sharing mutable references with a previous
+					// reset or with the live store state.
+					const fresh = defaultResumeData();
+
+					if (tab === "basics") {
+						return {
+							data: {
+								...state.data,
+								basics: fresh.basics,
+								picture: fresh.picture,
+							},
+						};
+					}
+
+					if (tab === "sections") {
+						return {
+							data: {
+								...state.data,
+								sections: fresh.sections,
+								summary: fresh.summary,
+								customSections: fresh.customSections,
+							},
+						};
+					}
+
+					// tab === "design"
+					return {
+						data: {
+							...state.data,
+							metadata: {
+								...state.data.metadata,
+								design: fresh.metadata.design,
+								typography: fresh.metadata.typography,
+								page: fresh.metadata.page,
+							},
+						},
+					};
 				}),
 
 			updateSection: (sectionType, updates) =>

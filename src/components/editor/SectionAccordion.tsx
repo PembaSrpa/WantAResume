@@ -34,6 +34,7 @@ import { ExperienceItemModal } from "./SectionItemModal"
 import { emptyItemFromFields, type GenericItem } from "./itemFields"
 import { InlineItemFields } from "./InlineItemFields"
 import { GENERIC_SECTION_FIELDS, sectionItemSummary } from "./sectionFieldConfig"
+import { ResetTabButton } from "./ResetTabButton"
 
 // A small movement threshold before a drag activates. Without this,
 // PointerSensor (which already covers touch via the unified Pointer Events
@@ -105,6 +106,7 @@ export function SectionAccordion() {
 
   const mainOrder = useResumeStore((state) => state.data.metadata.layout.pages[0]?.main ?? [])
   const reorderSections = useResumeStore((state) => state.reorderSections)
+  const resetTab = useResumeStore((state) => state.resetTab)
 
   // pages[0].main can also contain "summary" and custom-section UUIDs; this
   // accordion only manages the 11 built-in SECTION_TYPES (see note above).
@@ -141,9 +143,14 @@ export function SectionAccordion() {
   }
 
   return (
-    <DndContext
-      id="section-order"
-      sensors={sensors}
+    <div className="flex flex-col gap-2.5">
+      <div className="flex justify-end">
+        <ResetTabButton label="Sections" onConfirm={() => resetTab("sections")} />
+      </div>
+
+      <DndContext
+        id="section-order"
+        sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleSectionDragEnd}
     >
@@ -165,7 +172,8 @@ export function SectionAccordion() {
           ))}
         </div>
       </SortableContext>
-    </DndContext>
+      </DndContext>
+    </div>
   )
 }
 

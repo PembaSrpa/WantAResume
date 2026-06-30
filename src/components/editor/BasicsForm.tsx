@@ -8,11 +8,13 @@ import type { CustomField } from "@/lib/schema/data"
 import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import { fileToResizedDataUrl } from "./resizeImage"
+import { ResetTabButton } from "./ResetTabButton"
 
 export function BasicsForm() {
   const basics = useResumeStore((state) => state.data.basics)
   const picture = useResumeStore((state) => state.data.picture)
   const updateField = useResumeStore((state) => state.updateField)
+  const resetTab = useResumeStore((state) => state.resetTab)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
 
@@ -76,6 +78,10 @@ export function BasicsForm() {
 
   return (
     <div className="flex flex-col gap-[18px]">
+      <div className="flex justify-end">
+        <ResetTabButton label="Basics" onConfirm={() => resetTab("basics")} />
+      </div>
+
       <Field label="Name">
         <Input
           value={basics.name}

@@ -7,6 +7,7 @@ import { Scales } from "@/components/Scales"
 import { BottomNav, type BottomNavTab } from "@/components/mobile/BottomNav"
 import { SectionAccordion } from "@/components/editor/SectionAccordion"
 import { BasicsForm } from "@/components/editor/BasicsForm"
+import { DesignPanel } from "@/components/editor/DesignPanel"
 import { Button } from "@/components/ui/Button"
 import { Select } from "@/components/ui/Select"
 import { useResumeStore } from "@/lib/store/resume"
@@ -191,7 +192,7 @@ function DesignPanelPlaceholder({ onPreview }: { onPreview?: () => void }) {
   const setTemplate = useResumeStore((state) => state.setTemplate)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
           Template
@@ -215,7 +216,9 @@ function DesignPanelPlaceholder({ onPreview }: { onPreview?: () => void }) {
         </Button>
       )}
 
-      <p className="text-sm text-neutral-500">More design controls go here.</p>
+      <div className="h-px bg-neutral-800" />
+
+      <DesignPanel />
     </div>
   )
 }

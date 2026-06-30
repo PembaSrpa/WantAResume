@@ -63,7 +63,11 @@ describe("Mobile bottom nav reaches all three tabs", () => {
     const mobileBlock = getMobileBlock()
     await user.click(within(mobileBlock).getByRole("button", { name: /^design$/i }))
 
-    const select = within(mobileBlock).getByRole("combobox")
+    // Design tab now has multiple <select> elements (Template, font family
+    // x2, level display) since DesignPanel was built — scope specifically
+    // to the Template select via its accessible name, the original intent
+    // of this test, rather than assuming exactly one combobox exists.
+    const select = within(mobileBlock).getByRole("combobox", { name: /template/i })
     expect(select).toBeInTheDocument()
   })
 })
