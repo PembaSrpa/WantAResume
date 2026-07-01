@@ -265,10 +265,10 @@ export const useResumeStore = create<ResumeStore>()(
 		}),
 		{
 			name: "resume-builder",
-			version: 1,
+			version: 2,
 			migrate: (persistedState, version) => {
-				const state = persistedState as { data?: ResumeData; template?: Template } | null;
-				const firstPage = state?.data?.metadata?.layout?.pages?.[0];
+				let state = persistedState as { data?: ResumeData; template?: Template } | null;
+				let firstPage = state?.data?.metadata?.layout?.pages?.[0];
 
 				if (version < 1 && firstPage) {
 					// One-time cleanup for data corrupted by the pre-fix
@@ -282,7 +282,7 @@ export const useResumeStore = create<ResumeStore>()(
 					const sidebarSet = new Set(page.sidebar);
 					const cleanedMain = page.main.filter((id) => !sidebarSet.has(id));
 
-					return {
+					state = {
 						...state,
 						data: {
 							...state!.data!,
@@ -295,6 +295,35 @@ export const useResumeStore = create<ResumeStore>()(
 							},
 						},
 					};
+					firstPage = state.data!.metadata.layout.pages[0];
+				}
+
+				if (version < 2 && firstPage) {
+					// One-time fix for resumes saved before Summary was wired into
+					// the layout system: "summary" was never added to pages[0].main
+					// (or sidebar) for these older saves, so it has nowhere to render
+					// -- content typed into the Summary form is saved but never shown
+					// on the PDF, regardless of template or the section's own hidden
+					// flag. Restore it to the front of main, matching where fresh
+					// resumes place it by default (see schema/default.ts).
+					const [page, ...restPages] = state!.data!.metadata.layout.pages;
+					const alreadyPlaced = page.main.includes("summary") || page.sidebar.includes("summary");
+
+					if (!alreadyPlaced) {
+						state = {
+							...state,
+							data: {
+								...state!.data!,
+								metadata: {
+									...state!.data!.metadata,
+									layout: {
+										...state!.data!.metadata.layout,
+										pages: [{ ...page, main: ["summary", ...page.main] }, ...restPages],
+									},
+								},
+							},
+						};
+					}
 				}
 
 				return state;
