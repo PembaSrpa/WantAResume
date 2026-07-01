@@ -6,6 +6,7 @@ import { IconEye, IconArrowLeft } from "@tabler/icons-react"
 import { Scales } from "@/components/Scales"
 import { BottomNav, type BottomNavTab } from "@/components/mobile/BottomNav"
 import { SectionAccordion } from "@/components/editor/SectionAccordion"
+import { SummaryForm } from "@/components/editor/SummaryForm"
 import { BasicsForm } from "@/components/editor/BasicsForm"
 import { DesignPanel } from "@/components/editor/DesignPanel"
 import { Button } from "@/components/ui/Button"
@@ -97,7 +98,12 @@ export default function EditorPage() {
             previously ran edge-to-edge with no margin on mobile. */}
         <div className="flex-1 overflow-y-auto px-4 pb-16 pt-4">
           {editorTab === "basics" && <BasicsForm />}
-          {editorTab === "sections" && <SectionAccordion />}
+          {editorTab === "sections" && (
+            <div className="flex flex-col gap-2.5">
+              <SummaryForm />
+              <SectionAccordion />
+            </div>
+          )}
           {editorTab === "design" && (
             <DesignPanelPlaceholder onPreview={() => router.push("/editor/preview")} />
           )}
@@ -170,7 +176,12 @@ function EditorPanelShell({
       </div>
       <div className="flex-1 overflow-y-auto p-5">
         {activeTab === "basics" && <BasicsForm />}
-        {activeTab === "sections" && <SectionAccordion />}
+        {activeTab === "sections" && (
+          <div className="flex flex-col gap-2.5">
+            <SummaryForm />
+            <SectionAccordion />
+          </div>
+        )}
         {activeTab === "design" && <DesignPanelPlaceholder />}
       </div>
     </div>
