@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { IconArrowLeft, IconDownload, IconRefresh } from "@tabler/icons-react"
+import { IconArrowLeft, IconDownload, IconExternalLink, IconRefresh } from "@tabler/icons-react"
 import { useResumeStore } from "@/lib/store/resume"
 import { Button } from "@/components/ui/Button"
 
@@ -67,6 +67,25 @@ export default function PreviewPage() {
     a.click()
   }
 
+  // Mobile fix: most mobile browsers (iOS Safari, Chrome on Android) can't
+  // render a PDF inline inside an <iframe>. When that happens they fall back
+  // to their own native "can't preview this, tap to open" chrome rendered
+  // *inside* the iframe's box -- not anything this app built. Tapping that
+  // native "Open" does nothing on mobile because it tries to hand the blob:
+  // URL to a new browsing context; blob URLs are scoped to the document that
+  // created them via createObjectURL, and that native fallback's attempt to
+  // open it crosses a context boundary the blob URL doesn't survive.
+  //
+  // window.open() called directly from a real tap in *this* document (the
+  // one that created the blob URL) stays within the same origin/context, so
+  // the blob resolves correctly. That's the fix: give mobile a button that
+  // calls this directly, instead of depending on the iframe's own broken
+  // native fallback.
+  function handleOpenInNewTab() {
+    if (gen.status !== "ready") return
+    window.open(gen.blobUrl, "_blank")
+  }
+
   return (
     <div className="flex h-screen flex-col bg-[#0a0a0a]">
       <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-neutral-800 p-3">
@@ -108,11 +127,36 @@ export default function PreviewPage() {
         )}
 
         {gen.status === "ready" && (
-          <iframe
-            src={gen.blobUrl}
-            title="Resume PDF preview"
-            className="h-full w-full border-0"
-          />
+          <>
+            {/* Desktop/tablet: inline iframe preview, unchanged. */}
+            <iframe
+              src={gen.blobUrl}
+              title="Resume PDF preview"
+              className="hidden h-full w-full border-0 md:block"
+            />
+
+            {/* Mobile: skip the iframe's own broken native fallback entirely.
+                Real, app-controlled buttons in the main document instead --
+                see handleOpenInNewTab above for why. Kept mounted alongside
+                the iframe (CSS-hidden, not conditionally rendered) rather
+                than JS viewport detection, matching how the rest of the app
+                (e.g. editor tabs) already handles responsive layouts. */}
+            <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center md:hidden">
+              <p className="max-w-xs text-sm text-neutral-400">
+                Your browser can&apos;t show the PDF inline here. Use a button below instead.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button type="button" onClick={handleOpenInNewTab}>
+                  <IconExternalLink size={14} />
+                  Open PDF
+                </Button>
+                <Button type="button" variant="ghost" onClick={handleExport}>
+                  <IconDownload size={14} />
+                  Download PDF
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
