@@ -15,6 +15,26 @@ import type {
   ReferenceItem,
 } from "@/lib/schema/data"
 
+// Human-readable labels for the 11 GenericSectionType values. Two uses:
+// the "type" dropdown when creating/editing a custom section, and as the
+// editor UI's display fallback when a custom section's own title is blank
+// (mirroring how the PDF engine already falls back to a default English
+// title per type for blank-titled custom sections -- see
+// src/lib/pdf/section-title.ts's defaultEnglishSectionTitles).
+export const GENERIC_TYPE_LABELS: Record<GenericSectionType, string> = {
+  profiles: "Profiles",
+  education: "Education",
+  projects: "Projects",
+  skills: "Skills",
+  languages: "Languages",
+  interests: "Interests",
+  awards: "Awards",
+  certifications: "Certifications",
+  publications: "Publications",
+  volunteer: "Volunteer",
+  references: "References",
+}
+
 // Real field shapes per src/lib/schema/data.ts — not the Task B doc's table,
 // which was found to diverge in several places (see SectionAccordion notes).
 // Experience is intentionally excluded: its roles[] sub-modal doesn't fit

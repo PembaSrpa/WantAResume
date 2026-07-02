@@ -19,10 +19,11 @@
 // in main but isn't part of the accordion's managed list) got silently dropped from main
 // entirely on first reorder, since the accordion's list never includes it.
 
-import type { ResumeData, SectionType, SectionData } from "../schema/data";
+import type { ResumeData, SectionType, SectionData, CustomSection } from "../schema/data";
 import type { Template } from "../schema/templates";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { v4 as uuidv4 } from "uuid";
 import { defaultResumeData } from "../schema/defaults";
 
 // Matches editor/page.tsx's EditorTab/BottomNavTab vocabulary exactly. Kept
@@ -87,6 +88,34 @@ type ResumeStore = {
 	upsertGenericSectionItem: (sectionType: GenericSectionType, item: GenericSectionItem) => void;
 	removeSectionItem: (sectionType: SectionType, itemId: string) => void;
 	reorderSectionItems: (sectionType: SectionType, fromIndex: number, toIndex: number) => void;
+
+	// Custom-section mutators (operate on data.customSections, keyed by each
+	// section's own generated UUID rather than a fixed SectionType). Layout
+	// placement (pages[0].main/sidebar) is handled here too, the same lesson
+	// learned from the earlier "summary" migration bug: a section that
+	// exists in data.customSections but isn't also in the layout array has
+	// nowhere to render and will silently never appear.
+	//
+	// Returns the new section's id so the UI can auto-expand it right after
+	// creation.
+	addCustomSection: (type: GenericSectionType, placement: "main" | "sidebar") => string;
+	removeCustomSection: (id: string) => void;
+
+	// Changing `type` clears `items`: a custom section's items are shaped by
+	// GENERIC_SECTION_FIELDS[type] (sectionFieldConfig.ts), so items built
+	// for one type (e.g. Skills' level/keywords) don't correspond to
+	// another's fields (e.g. Education's school/degree). The UI is
+	// responsible for confirming this with the user before calling with a
+	// changed type on a non-empty section -- this method enforces the
+	// invariant unconditionally either way, the same pattern reorderSections
+	// uses for main/sidebar membership above.
+	updateCustomSection: (
+		id: string,
+		updates: Partial<Pick<CustomSection, "title" | "icon" | "columns" | "hidden" | "type">>,
+	) => void;
+	upsertCustomSectionItem: (id: string, item: GenericSectionItem) => void;
+	removeCustomSectionItem: (id: string, itemId: string) => void;
+	reorderCustomSectionItems: (id: string, fromIndex: number, toIndex: number) => void;
 };
 
 const defaultTemplate: Template = "onyx";
@@ -318,6 +347,129 @@ export const useResumeStore = create<ResumeStore>()(
 						},
 					};
 				}),
+
+			addCustomSection: (type, placement) => {
+				const id = uuidv4();
+				set((state) => {
+					const newSection: CustomSection = {
+						id,
+						title: "",
+						icon: "",
+						columns: 1,
+						hidden: false,
+						type,
+						items: [],
+					};
+					const [firstPage, ...restPages] = state.data.metadata.layout.pages;
+					const nextPage =
+						placement === "sidebar"
+							? { ...firstPage, sidebar: [...firstPage.sidebar, id] }
+							: { ...firstPage, main: [...firstPage.main, id] };
+
+					return {
+						data: {
+							...state.data,
+							customSections: [...state.data.customSections, newSection],
+							metadata: {
+								...state.data.metadata,
+								layout: {
+									...state.data.metadata.layout,
+									pages: [nextPage, ...restPages],
+								},
+							},
+						},
+					};
+				});
+				return id;
+			},
+
+			removeCustomSection: (id) =>
+				set((state) => {
+					const [firstPage, ...restPages] = state.data.metadata.layout.pages;
+					return {
+						data: {
+							...state.data,
+							customSections: state.data.customSections.filter((section) => section.id !== id),
+							metadata: {
+								...state.data.metadata,
+								layout: {
+									...state.data.metadata.layout,
+									pages: [
+										{
+											...firstPage,
+											main: firstPage.main.filter((sectionId) => sectionId !== id),
+											sidebar: firstPage.sidebar.filter((sectionId) => sectionId !== id),
+										},
+										...restPages,
+									],
+								},
+							},
+						},
+					};
+				}),
+
+			updateCustomSection: (id, updates) =>
+				set((state) => ({
+					data: {
+						...state.data,
+						customSections: state.data.customSections.map((section) => {
+							if (section.id !== id) return section;
+							// See this method's doc comment on the store type above: a
+							// type change invalidates the existing items, so it always
+							// clears them rather than leaving mismatched item shapes.
+							const typeChanged = updates.type !== undefined && updates.type !== section.type;
+							return {
+								...section,
+								...updates,
+								items: typeChanged ? [] : section.items,
+							};
+						}),
+					},
+				})),
+
+			upsertCustomSectionItem: (id, item) =>
+				set((state) => ({
+					data: {
+						...state.data,
+						customSections: state.data.customSections.map((section) => {
+							if (section.id !== id) return section;
+							// Single sanctioned assertion, same rationale as
+							// upsertGenericSectionItem above: item shape is guaranteed
+							// by GENERIC_SECTION_FIELDS[section.type] at the UI layer,
+							// not something TS can check structurally here.
+							const items = section.items as unknown as GenericSectionItem[];
+							const exists = items.some((existing) => existing.id === item.id);
+							const nextItems = exists
+								? items.map((existing) => (existing.id === item.id ? item : existing))
+								: [...items, item];
+							return { ...section, items: nextItems as unknown as CustomSection["items"] };
+						}),
+					},
+				})),
+
+			removeCustomSectionItem: (id, itemId) =>
+				set((state) => ({
+					data: {
+						...state.data,
+						customSections: state.data.customSections.map((section) =>
+							section.id === id
+								? { ...section, items: section.items.filter((item) => item.id !== itemId) }
+								: section,
+						),
+					},
+				})),
+
+			reorderCustomSectionItems: (id, fromIndex, toIndex) =>
+				set((state) => ({
+					data: {
+						...state.data,
+						customSections: state.data.customSections.map((section) =>
+							section.id === id
+								? { ...section, items: moveItem(section.items, fromIndex, toIndex) }
+								: section,
+						),
+					},
+				})),
 		}),
 		{
 			name: "resume-builder",
