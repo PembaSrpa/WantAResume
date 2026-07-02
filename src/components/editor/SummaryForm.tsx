@@ -28,6 +28,7 @@ export function SummaryForm() {
           Summary
         </span>
         <div className="flex items-center gap-2">
+          <span className="text-[11px] text-neutral-500"></span>
           <Switch
             checked={!summary.hidden}
             onCheckedChange={(checked) => patchSummary({ hidden: !checked })}
