@@ -1,235 +1,72 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { IconEye, IconArrowLeft } from "@tabler/icons-react"
+import Image from "next/image"
+import { motion } from "motion/react"
 import { Scales } from "@/components/Scales"
-import { BottomNav, type BottomNavTab } from "@/components/mobile/BottomNav"
-import { SectionAccordion } from "@/components/editor/SectionAccordion"
-import { SummaryForm } from "@/components/editor/SummaryForm"
-import { BasicsForm } from "@/components/editor/BasicsForm"
-import { DesignPanel } from "@/components/editor/DesignPanel"
-import { Button } from "@/components/ui/Button"
-import { Select } from "@/components/ui/Select"
 import { useResumeStore } from "@/lib/store/resume"
 import { templateSchema, type Template } from "@/lib/schema/templates"
 
-// Editing only. PreviewPanel/PDFCanvas/PDF.js are NOT imported anywhere in
-// this file or its tree — see TASK_PREVIEW_SPLIT.md. Preview lives at its
-// own route, /editor/preview, so this route's bundle never has to load
-// @react-pdf/renderer, pdfjs-dist, or the 15 template files.
-
-// EditorTab is now just an alias for BottomNavTab — they're the same three
-// values (basics/sections/design) since Preview is gone from mobile
-// entirely (TASK_MOBILE_AND_DEFAULT_TAB.md) and there's no longer any
-// BottomNav-only concept that isn't also a real editor tab. Per
-// TASK_MOBILE_LAYOUT.md, this removes the old lastEditorTab/mapping-function
-// layer at the source rather than patching around the conflation again.
-type EditorTab = BottomNavTab
-
-const EDITOR_TABS: { id: EditorTab; label: string }[] = [
-  { id: "basics", label: "Basics" },
-  { id: "sections", label: "Sections" },
-  { id: "design", label: "Design" },
-]
-
-const TEMPLATES = templateSchema.options
+const TEMPLATES: Template[] = templateSchema.options
 
 function templateLabel(name: Template) {
   return name.charAt(0).toUpperCase() + name.slice(1)
 }
 
-export default function EditorPage() {
+export default function HomePage() {
   const router = useRouter()
-  const [editorTab, setEditorTab] = useState<EditorTab>("basics")
-
-  return (
-    <div className="relative h-screen overflow-hidden bg-[#0a0a0a]">
-      {/* Desktop / tablet: Scales only show at >=1024px per spec (hidden on tablet+mobile) */}
-      <div className="hidden lg:block">
-        <Scales variant="compact" />
-      </div>
-
-      {/* Desktop layout: editor fills the space between the scales. No
-          preview column anymore — see TASK_PREVIEW_SPLIT.md. */}
-      <div className="hidden h-full lg:flex">
-        <div className="w-[5%] flex-shrink-0" />
-        <div className="flex-1 overflow-y-auto">
-          <EditorPanelShell
-            activeTab={editorTab}
-            onTabChange={setEditorTab}
-            onPreview={() => router.push("/editor/preview")}
-            onBack={() => router.push("/")}
-          />
-        </div>
-        <div className="w-[5%] flex-shrink-0" />
-      </div>
-
-      {/* Tablet layout: same single-panel editor, no Scales. */}
-      <div className="hidden h-full md:flex lg:hidden">
-        <div className="flex-1 overflow-y-auto">
-          <EditorPanelShell
-            activeTab={editorTab}
-            onTabChange={setEditorTab}
-            onPreview={() => router.push("/editor/preview")}
-            onBack={() => router.push("/")}
-          />
-        </div>
-      </div>
-
-      {/* Mobile layout: single panel driven by a 3-tab bottom nav
-          (Basics/Sections/Design — no Preview on mobile, see
-          TASK_MOBILE_AND_DEFAULT_TAB.md). BottomNav wires directly to
-          editorTab/setEditorTab now, no mapping layer needed. A slim
-          back-button row replaces the old "no top navbar" emptiness —
-          this is a single-purpose affordance, not a full navbar. */}
-      <div className="flex h-full flex-col md:hidden">
-        <div className="flex items-center border-b border-neutral-800 px-3 py-2">
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="flex items-center gap-1.5 px-1 py-1 text-neutral-400 transition-colors hover:text-neutral-100"
-            aria-label="Back to homepage"
-          >
-            <IconArrowLeft size={16} />
-          </button>
-        </div>
-        {/* px-4 horizontal padding added per TASK_MOBILE_LAYOUT.md — content
-            previously ran edge-to-edge with no margin on mobile. */}
-        <div className="flex-1 overflow-y-auto px-4 pb-16 pt-4">
-          {editorTab === "basics" && <BasicsForm />}
-          {editorTab === "sections" && (
-            <div className="flex flex-col gap-2.5">
-              <SummaryForm />
-              <SectionAccordion />
-            </div>
-          )}
-          {editorTab === "design" && (
-            <DesignPanelPlaceholder onPreview={() => router.push("/editor/preview")} />
-          )}
-        </div>
-        <BottomNav active={editorTab} onChange={setEditorTab} />
-      </div>
-    </div>
-  )
-}
-
-function EditorPanelShell({
-  activeTab,
-  onTabChange,
-  onPreview,
-  onBack,
-}: {
-  activeTab: EditorTab
-  onTabChange: (tab: EditorTab) => void
-  onPreview: () => void
-  onBack: () => void
-}) {
-  const template = useResumeStore((state) => state.template)
   const setTemplate = useResumeStore((state) => state.setTemplate)
 
-  return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-neutral-800 px-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 rounded-md px-1.5 py-2 text-neutral-400 transition-colors hover:text-neutral-100"
-          aria-label="Back to homepage"
-        >
-          <IconArrowLeft size={17} />
-        </button>
+  function handleSelect(template: Template) {
+    setTemplate(template)
+    router.push("/editor")
+  }
 
-        <div className="flex flex-1 gap-1 py-2">
-          {EDITOR_TABS.map((tab) => (
-            <button
-              key={tab.id}
+  return (
+    <div className="relative min-h-screen bg-[#0a0a0a]">
+      <Scales variant="spacious" />
+      <div className="mx-auto max-w-6xl px-8 py-16 md:px-16">
+        <h1 className="mb-10 text-center text-2xl text-neutral-100">
+          Choose a template
+        </h1>
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
+          {TEMPLATES.map((name, index) => (
+            <motion.button
+              key={name}
               type="button"
-              onClick={() => onTabChange(tab.id)}
-              className={
-                activeTab === tab.id
-                  ? "rounded-t-md border-b-2 border-orange-700 bg-neutral-900 px-3.5 py-2 text-[13px] font-medium tracking-[0.01em] text-neutral-100"
-                  : "rounded-t-md border-b-2 border-transparent px-3.5 py-2 text-[13px] text-neutral-500 transition-colors hover:text-neutral-300"
-              }
+              onClick={() => handleSelect(name)}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.04 }}
+              whileHover={{ y: -4 }}
+              className="group flex flex-col items-center gap-3 text-left"
             >
-              {tab.label}
-            </button>
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-md border border-neutral-700 bg-neutral-800 transition-colors group-hover:border-orange-700">
+                {/* Blurred fill layer: sacrifices width/sharpness so the
+                    foreground image's full height is never cropped. */}
+                <Image
+                  src={`/templates/jpg/${name}.jpg`}
+                  alt=""
+                  fill
+                  aria-hidden="true"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="scale-110 object-cover object-top blur-xl opacity-60"
+                />
+                <Image
+                  src={`/templates/jpg/${name}.jpg`}
+                  alt={`${templateLabel(name)} resume template preview`}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-contain object-top"
+                />
+              </div>
+              <span className="text-sm text-neutral-300">
+                {templateLabel(name)}
+              </span>
+            </motion.button>
           ))}
         </div>
-
-        <Select
-          value={template}
-          onChange={(e) => setTemplate(e.target.value as Template)}
-          className="h-8 w-32 py-0 text-xs"
-        >
-          {TEMPLATES.map((name) => (
-            <option key={name} value={name}>
-              {templateLabel(name)}
-            </option>
-          ))}
-        </Select>
-
-        <Button type="button" onClick={onPreview} className="my-2">
-          <IconEye size={14} />
-          Preview
-        </Button>
       </div>
-      <div className="flex-1 overflow-y-auto p-5">
-        {activeTab === "basics" && <BasicsForm />}
-        {activeTab === "sections" && (
-          <div className="flex flex-col gap-2.5">
-            <SummaryForm />
-            <SectionAccordion />
-          </div>
-        )}
-        {activeTab === "design" && <DesignPanelPlaceholder />}
-      </div>
-    </div>
-  )
-}
-
-// DesignPanelPlaceholder still in use — Design tab not built yet. The
-// template Select here is the only place mobile can change templates
-// (EditorPanelShell's header, where desktop/tablet's copy lives, is never
-// rendered on mobile) — see TASK_MOBILE_LAYOUT.md issue 3. When the real
-// Design tab gets built, this control should move there properly rather
-// than staying a standalone addition to the placeholder.
-//
-// onPreview is optional and mobile-only: desktop/tablet already has a
-// Preview button in EditorPanelShell's header, so rendering a second one
-// here would be redundant for those breakpoints.
-function DesignPanelPlaceholder({ onPreview }: { onPreview?: () => void }) {
-  const template = useResumeStore((state) => state.template)
-  const setTemplate = useResumeStore((state) => state.setTemplate)
-
-  return (
-    <div className="flex flex-col gap-5">
-      <label className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
-          Template
-        </span>
-        <Select
-          value={template}
-          onChange={(e) => setTemplate(e.target.value as Template)}
-        >
-          {TEMPLATES.map((name) => (
-            <option key={name} value={name}>
-              {templateLabel(name)}
-            </option>
-          ))}
-        </Select>
-      </label>
-
-      {onPreview && (
-        <Button type="button" onClick={onPreview}>
-          <IconEye size={14} />
-          Preview
-        </Button>
-      )}
-
-      <div className="h-px bg-neutral-800" />
-
-      <DesignPanel />
     </div>
   )
 }
