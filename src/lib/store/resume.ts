@@ -31,6 +31,21 @@ import { defaultResumeData } from "../schema/defaults";
 // identical and TypeScript will accept either at call sites.
 export type EditorResetTab = "basics" | "sections" | "design";
 
+// The 11 section types managed by the config-driven generic item editor
+// (SectionAccordion.tsx's GenericSectionBody + sectionFieldConfig.ts).
+// "experience" is excluded: its roles[] sub-array is structurally unique
+// and stays on a hand-written path (ExperienceSectionBody / Experience
+// ItemModal), using upsertSectionItem directly with its own real
+// ExperienceItem type -- no genericity needed there.
+export type GenericSectionType = Exclude<SectionType, "experience">;
+
+// Shape produced by the generic item field system (see itemFields.tsx's
+// GenericItem). Duplicated here rather than imported, matching
+// EditorResetTab above: the store shouldn't depend on UI code, even for a
+// type-only import -- keeps this file's public contract self-contained and
+// independently readable.
+type GenericSectionItem = Record<string, unknown> & { id: string; hidden: boolean };
+
 type ResumeStore = {
 	data: ResumeData;
 	template: Template;
@@ -58,6 +73,18 @@ type ResumeStore = {
 		sectionType: T,
 		item: SectionData<T>["items"][number],
 	) => void;
+
+	// Config-driven counterpart to upsertSectionItem, for the 11
+	// GenericSectionType section types only. The item shape here isn't a
+	// single literal SectionItem<T> the way upsertSectionItem's is -- it's
+	// assembled dynamically per section type from GENERIC_SECTION_FIELDS
+	// (sectionFieldConfig.ts's Record<GenericSectionType, FieldConfig[]>,
+	// a required/exhaustive record, so a missing or mistyped section entry
+	// fails to compile there). This method is the one sanctioned place that
+	// trusts that config's contract at runtime, replacing what used to be
+	// an unchecked `as never` cast at each of its two call sites in
+	// SectionAccordion.tsx.
+	upsertGenericSectionItem: (sectionType: GenericSectionType, item: GenericSectionItem) => void;
 	removeSectionItem: (sectionType: SectionType, itemId: string) => void;
 	reorderSectionItems: (sectionType: SectionType, fromIndex: number, toIndex: number) => void;
 };
@@ -210,6 +237,35 @@ export const useResumeStore = create<ResumeStore>()(
 			upsertSectionItem: (sectionType, item) =>
 				set((state) => {
 					const section = state.data.sections[sectionType];
+					const exists = section.items.some((existing) => existing.id === item.id);
+					const items = exists
+						? section.items.map((existing) => (existing.id === item.id ? item : existing))
+						: [...section.items, item];
+					return {
+						data: {
+							...state.data,
+							sections: {
+								...state.data.sections,
+								[sectionType]: { ...section, items },
+							},
+						},
+					};
+				}),
+
+			upsertGenericSectionItem: (sectionType, item) =>
+				set((state) => {
+					// The one sanctioned assertion for this method (see its doc
+					// comment on the store type above). Reading through this typed
+					// view, rather than casting `item` itself at each call site,
+					// keeps section.items.some/.map well-behaved on a single
+					// concrete element type instead of the awkward union of all
+					// 11 sections' distinct item types that indexing with a plain
+					// GenericSectionType union would otherwise produce.
+					const sections = state.data.sections as unknown as Record<
+						GenericSectionType,
+						SectionData<GenericSectionType> & { items: GenericSectionItem[] }
+					>;
+					const section = sections[sectionType];
 					const exists = section.items.some((existing) => existing.id === item.id);
 					const items = exists
 						? section.items.map((existing) => (existing.id === item.id ? item : existing))

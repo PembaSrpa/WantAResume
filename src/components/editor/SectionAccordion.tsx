@@ -26,7 +26,7 @@ import {
   IconPlus,
 } from "@tabler/icons-react"
 import { motion, AnimatePresence } from "motion/react"
-import { useResumeStore } from "@/lib/store/resume"
+import { useResumeStore, type GenericSectionType } from "@/lib/store/resume"
 import type { SectionType, ExperienceItem } from "@/lib/schema/data"
 import { Switch } from "@/components/ui/Switch"
 import { Input } from "@/components/ui/Input"
@@ -418,11 +418,11 @@ function SectionBody({ sectionType }: { sectionType: SectionType }) {
   return null
 }
 
-function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
+function GenericSectionBody({ sectionType }: { sectionType: GenericSectionType }) {
   const items = useResumeStore((state) => state.data.sections[sectionType].items)
   const reorderSectionItems = useResumeStore((state) => state.reorderSectionItems)
   const removeSectionItem = useResumeStore((state) => state.removeSectionItem)
-  const upsertSectionItem = useResumeStore((state) => state.upsertSectionItem)
+  const upsertGenericSectionItem = useResumeStore((state) => state.upsertGenericSectionItem)
 
   // Only one item expanded at a time per section, mirroring the section
   // accordion's own one-at-a-time behavior. No modal, no draft state — every
@@ -432,7 +432,10 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT }),
   )
-  const fields = GENERIC_SECTION_FIELDS[sectionType] ?? []
+  // GENERIC_SECTION_FIELDS is a full Record<GenericSectionType, FieldConfig[]>
+  // (not Partial) -- every generic section type is guaranteed an entry, checked
+  // at compile time in sectionFieldConfig.ts, so no fallback is needed here.
+  const fields = GENERIC_SECTION_FIELDS[sectionType]
 
   function handleItemDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -444,7 +447,7 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
 
   function handleAddItem() {
     const newItem = emptyItemFromFields(fields)
-    upsertSectionItem(sectionType, newItem as never)
+    upsertGenericSectionItem(sectionType, newItem)
     setExpandedId(newItem.id)
   }
 
@@ -485,7 +488,7 @@ function GenericSectionBody({ sectionType }: { sectionType: SectionType }) {
               <InlineItemFields
                 fields={fields}
                 item={item as GenericItem}
-                onChange={(updated) => upsertSectionItem(sectionType, updated as never)}
+                onChange={(updated) => upsertGenericSectionItem(sectionType, updated)}
               />
             </InlineSortableItemRow>
           ))}

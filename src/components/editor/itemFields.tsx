@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
 import { TagInput } from "./TagInput"
 import { LevelSlider } from "./LevelSlider"
+import { ColorField } from "./ColorField"
 
 // ---- Field config types -----------------------------------------------
 //
@@ -20,6 +21,10 @@ import { LevelSlider } from "./LevelSlider"
 //   plus the inlineLink checkbox, per the corrected per-field pattern
 // - level: 0-5 slider (Skills/Languages)
 // - tags: comma-separated chip input (Skills/Interests keywords)
+// - icon: Phosphor icon name (Profiles/Skills/Interests items only —
+//   schema's iconSchema; empty string uses the template default)
+// - icon-color: rgba color string paired with "icon" (schema's
+//   iconColorSchema; empty string uses the template's default icon color)
 
 export type FieldConfig =
   | { kind: "text"; key: string; label: string; placeholder?: string }
@@ -27,6 +32,8 @@ export type FieldConfig =
   | { kind: "website"; key: string; urlLabel?: string }
   | { kind: "level"; key: string; label: string }
   | { kind: "tags"; key: string; label: string }
+  | { kind: "icon"; key: string; label: string }
+  | { kind: "icon-color"; key: string; label: string }
 
 export type GenericItem = Record<string, unknown> & { id: string; hidden: boolean }
 
@@ -34,6 +41,8 @@ function emptyValueFor(field: FieldConfig): unknown {
   switch (field.kind) {
     case "text":
     case "textarea-rich":
+    case "icon":
+    case "icon-color":
       return ""
     case "website":
       return { url: "", label: "", inlineLink: false }
@@ -133,6 +142,30 @@ export function FieldRenderer({
         <Field label={field.label}>
           <TagInput value={(value as string[]) ?? []} onChange={onChange} />
         </Field>
+      )
+
+    case "icon":
+      return (
+        <Field label={field.label}>
+          <Input
+            placeholder="e.g. linkedin-logo"
+            value={(value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+          />
+          <p className="mt-1 text-[11px] text-neutral-500">
+            Phosphor icon name. Empty uses the template default; &quot;none&quot; hides it.
+          </p>
+        </Field>
+      )
+
+    case "icon-color":
+      return (
+        <ColorField
+          label={field.label}
+          value={(value as string) ?? ""}
+          onChange={onChange}
+          onClear={() => onChange("")}
+        />
       )
   }
 }

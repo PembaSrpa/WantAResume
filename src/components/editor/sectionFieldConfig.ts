@@ -1,4 +1,5 @@
 import type { FieldConfig } from "./itemFields"
+import type { GenericSectionType } from "@/lib/store/resume"
 import type {
   SectionType,
   ProfileItem,
@@ -18,12 +19,18 @@ import type {
 // which was found to diverge in several places (see SectionAccordion notes).
 // Experience is intentionally excluded: its roles[] sub-modal doesn't fit
 // this generic shape and stays hand-written in SectionItemModal.tsx.
-
-export const GENERIC_SECTION_FIELDS: Partial<Record<SectionType, FieldConfig[]>> = {
+//
+// Typed as a full Record (not Partial) over GenericSectionType: a missing
+// or misspelled section key here now fails to compile, instead of silently
+// falling back to an empty field list at runtime (the previous behavior
+// under Partial<Record<SectionType, ...>>).
+export const GENERIC_SECTION_FIELDS: Record<GenericSectionType, FieldConfig[]> = {
   profiles: [
     { kind: "text", key: "network", label: "Network", placeholder: "LinkedIn" },
     { kind: "text", key: "username", label: "Username", placeholder: "janedoe" },
     { kind: "website", key: "website", urlLabel: "Profile URL" },
+    { kind: "icon", key: "icon", label: "Icon" },
+    { kind: "icon-color", key: "iconColor", label: "Icon color" },
   ],
   education: [
     { kind: "text", key: "school", label: "School", placeholder: "Stanford University" },
@@ -56,6 +63,8 @@ export const GENERIC_SECTION_FIELDS: Partial<Record<SectionType, FieldConfig[]>>
     { kind: "text", key: "proficiency", label: "Proficiency", placeholder: "e.g. Advanced" },
     { kind: "level", key: "level", label: "Level" },
     { kind: "tags", key: "keywords", label: "Keywords" },
+    { kind: "icon", key: "icon", label: "Icon" },
+    { kind: "icon-color", key: "iconColor", label: "Icon color" },
   ],
   languages: [
     { kind: "text", key: "language", label: "Language", placeholder: "Spanish" },
@@ -65,6 +74,8 @@ export const GENERIC_SECTION_FIELDS: Partial<Record<SectionType, FieldConfig[]>>
   interests: [
     { kind: "text", key: "name", label: "Name", placeholder: "Photography" },
     { kind: "tags", key: "keywords", label: "Keywords" },
+    { kind: "icon", key: "icon", label: "Icon" },
+    { kind: "icon-color", key: "iconColor", label: "Icon color" },
   ],
   awards: [
     { kind: "text", key: "title", label: "Title", placeholder: "Employee of the Year" },
