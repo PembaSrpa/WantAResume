@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useRef, useEffect } from "react"
 import {
   DndContext,
@@ -34,19 +33,15 @@ import { Select } from "@/components/ui/Select"
 import { ExperienceItemModal } from "./SectionItemModal"
 import { emptyItemFromFields, type GenericItem, type FieldConfig } from "./itemFields"
 import { InlineItemFields } from "./InlineItemFields"
-import { GENERIC_SECTION_FIELDS, GENERIC_TYPE_LABELS, sectionItemSummary } from "./sectionFieldConfig"
+import {
+  GENERIC_SECTION_FIELDS,
+  GENERIC_TYPE_LABELS,
+  sectionItemSummary,
+} from "./sectionFieldConfig"
 import { ResetTabButton } from "./ResetTabButton"
 import { DeleteSectionButton } from "./DeleteSectionButton"
 import { AddCustomSectionButton } from "./AddCustomSectionButton"
-
-// A small movement threshold before a drag activates. Without this,
-// PointerSensor (which already covers touch via the unified Pointer Events
-// API — no separate TouchSensor needed) starts listening for drag on the
-// very first touch pixel, which can fight the browser's native scroll
-// gesture on a touch device. 8px is below normal drag intent for a mouse
-// too, so this doesn't change desktop's already-working feel.
 const DRAG_ACTIVATION_CONSTRAINT = { distance: 8 }
-
 function MoveButtons({
   onMoveUp,
   onMoveDown,
@@ -85,11 +80,6 @@ function MoveButtons({
     </div>
   )
 }
-
-// Built-in section keys this accordion manages directly. "summary" is
-// handled separately outside this component (see SummaryForm.tsx).
-// Custom sections (UUID ids, in data.customSections) are merged into the
-// same ordered list below and rendered via SortableCustomSectionRow.
 const SECTION_TYPES: SectionType[] = [
   "profiles",
   "experience",
@@ -104,35 +94,24 @@ const SECTION_TYPES: SectionType[] = [
   "volunteer",
   "references",
 ]
-
 export function SectionAccordion() {
   const [openSection, setOpenSection] = useState<string | null>(null)
-
   const mainOrder = useResumeStore((state) => state.data.metadata.layout.pages[0]?.main ?? [])
   const customSections = useResumeStore((state) => state.data.customSections)
   const reorderSections = useResumeStore((state) => state.reorderSections)
   const resetTab = useResumeStore((state) => state.resetTab)
-
   const customSectionIds = customSections.map((section) => section.id)
-
-  // pages[0].main can also contain "summary"; this accordion manages the
-  // 11 built-in SECTION_TYPES plus every id in data.customSections.
-  // Anything missing from main (e.g. on a freshly reset resume, or a
-  // custom section created into the sidebar) is appended at the end so
-  // it's still visible and reorderable -- same fallback SECTION_TYPES
-  // already relied on before custom sections existed.
   const sectionOrder = [
     ...mainOrder.filter(
-      (id): id is string => SECTION_TYPES.includes(id as SectionType) || customSectionIds.includes(id),
+      (id): id is string =>
+        SECTION_TYPES.includes(id as SectionType) || customSectionIds.includes(id)
     ),
     ...SECTION_TYPES.filter((type) => !mainOrder.includes(type)),
     ...customSectionIds.filter((id) => !mainOrder.includes(id)),
   ]
-
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT }),
+    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT })
   )
-
   function handleSectionDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -140,19 +119,12 @@ export function SectionAccordion() {
     const newIndex = sectionOrder.indexOf(over.id as string)
     reorderSections(arrayMove(sectionOrder, oldIndex, newIndex))
   }
-
-  // Mobile fallback for drag-and-drop reordering. Touch-drag is configured
-  // (activationConstraint + touch-action) but cannot be fully verified as
-  // reliable in this environment — see TASK_MOBILE_TOUCH_DND.md. These
-  // up/down buttons are a guaranteed-working alternative, shown mobile-only
-  // (md:hidden) alongside the drag handle, not instead of it.
   function moveSectionBy(id: string, delta: 1 | -1) {
     const index = sectionOrder.indexOf(id)
     const newIndex = index + delta
     if (newIndex < 0 || newIndex >= sectionOrder.length) return
     reorderSections(arrayMove(sectionOrder, index, newIndex))
   }
-
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex justify-end">
@@ -162,47 +134,45 @@ export function SectionAccordion() {
       <DndContext
         id="section-order"
         sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleSectionDragEnd}
-    >
-      <SortableContext items={sectionOrder} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-1 items-start gap-2.5 lg:grid-cols-2">
-          {sectionOrder.map((id, index) => {
-            const isOpen = openSection === id
-            const onToggle = () => setOpenSection((current) => (current === id ? null : id))
-            const onMoveUp = index > 0 ? () => moveSectionBy(id, -1) : undefined
-            const onMoveDown =
-              index < sectionOrder.length - 1 ? () => moveSectionBy(id, 1) : undefined
-
-            return SECTION_TYPES.includes(id as SectionType) ? (
-              <SortableSectionRow
-                key={id}
-                sectionType={id as SectionType}
-                isOpen={isOpen}
-                onToggle={onToggle}
-                onMoveUp={onMoveUp}
-                onMoveDown={onMoveDown}
-              />
-            ) : (
-              <SortableCustomSectionRow
-                key={id}
-                customSectionId={id}
-                isOpen={isOpen}
-                onToggle={onToggle}
-                onMoveUp={onMoveUp}
-                onMoveDown={onMoveDown}
-              />
-            )
-          })}
-        </div>
-      </SortableContext>
+        collisionDetection={closestCenter}
+        onDragEnd={handleSectionDragEnd}
+      >
+        <SortableContext items={sectionOrder} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 items-start gap-2.5 lg:grid-cols-2">
+            {sectionOrder.map((id, index) => {
+              const isOpen = openSection === id
+              const onToggle = () => setOpenSection((current) => (current === id ? null : id))
+              const onMoveUp = index > 0 ? () => moveSectionBy(id, -1) : undefined
+              const onMoveDown =
+                index < sectionOrder.length - 1 ? () => moveSectionBy(id, 1) : undefined
+              return SECTION_TYPES.includes(id as SectionType) ? (
+                <SortableSectionRow
+                  key={id}
+                  sectionType={id as SectionType}
+                  isOpen={isOpen}
+                  onToggle={onToggle}
+                  onMoveUp={onMoveUp}
+                  onMoveDown={onMoveDown}
+                />
+              ) : (
+                <SortableCustomSectionRow
+                  key={id}
+                  customSectionId={id}
+                  isOpen={isOpen}
+                  onToggle={onToggle}
+                  onMoveUp={onMoveUp}
+                  onMoveDown={onMoveDown}
+                />
+              )
+            })}
+          </div>
+        </SortableContext>
       </DndContext>
 
       <AddCustomSectionButton onCreated={(id) => setOpenSection(id)} />
     </div>
   )
 }
-
 function SortableSectionRow({
   sectionType,
   isOpen,
@@ -219,12 +189,10 @@ function SortableSectionRow({
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: sectionType,
   })
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
-
   return (
     <div
       ref={setNodeRef}
@@ -259,7 +227,6 @@ function SortableSectionRow({
     </div>
   )
 }
-
 function SectionHeader({
   sectionType,
   isOpen,
@@ -277,28 +244,18 @@ function SectionHeader({
 }) {
   const section = useResumeStore((state) => state.data.sections[sectionType])
   const updateSection = useResumeStore((state) => state.updateSection)
-
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState(section.title || sectionType)
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   function commitRename() {
     updateSection(sectionType, { title: titleDraft })
     setRenaming(false)
   }
-
   useEffect(() => {
     return () => {
       if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
     }
   }, [])
-
-  // Single click anywhere on the row, including the title, toggles
-  // expand/collapse. Double-click specifically on the title enters rename
-  // mode instead. A double-click fires two click events before (and
-  // sometimes instead of) a dblclick event, so the first click is held
-  // briefly — if a second click lands within the window, it's treated as
-  // a double-click and the pending single-click toggle is cancelled.
   function handleTitleClick() {
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current)
@@ -312,7 +269,6 @@ function SectionHeader({
       onToggle()
     }, 250)
   }
-
   return (
     <div
       onClick={onToggle}
@@ -415,17 +371,10 @@ function SectionHeader({
     </div>
   )
 }
-
 function SectionBody({ sectionType }: { sectionType: SectionType }) {
   if (sectionType === "experience") {
     return <ExperienceSectionBody />
   }
-  // All 10 generic-path section types now wired: the 3 pilots
-  // (skills/profiles/education), this round's 7
-  // (projects/languages/interests/awards/certifications/publications/
-  // volunteer), plus references. Experience (11th) stays hand-written
-  // permanently — its roles[] sub-array is structurally unique and not
-  // worth generalizing for a single section type.
   if (
     sectionType === "skills" ||
     sectionType === "profiles" ||
@@ -443,17 +392,12 @@ function SectionBody({ sectionType }: { sectionType: SectionType }) {
   }
   return null
 }
-
 function GenericSectionBody({ sectionType }: { sectionType: GenericSectionType }) {
   const items = useResumeStore((state) => state.data.sections[sectionType].items)
   const reorderSectionItems = useResumeStore((state) => state.reorderSectionItems)
   const removeSectionItem = useResumeStore((state) => state.removeSectionItem)
   const upsertGenericSectionItem = useResumeStore((state) => state.upsertGenericSectionItem)
-  // GENERIC_SECTION_FIELDS is a full Record<GenericSectionType, FieldConfig[]>
-  // (not Partial) -- every generic section type is guaranteed an entry, checked
-  // at compile time in sectionFieldConfig.ts, so no fallback is needed here.
   const fields = GENERIC_SECTION_FIELDS[sectionType]
-
   return (
     <div className="flex flex-col gap-2 border-t border-neutral-700 px-3.5 pb-3.5 pt-3">
       <GenericItemList
@@ -468,33 +412,19 @@ function GenericSectionBody({ sectionType }: { sectionType: GenericSectionType }
     </div>
   )
 }
-
-// Available "type" choices for a custom section -- the same 11
-// GenericSectionType values GENERIC_SECTION_FIELDS covers. Not Experience
-// (hand-written roles[] editor, no generic form config exists for it) and
-// not Summary/Cover Letter (single-object shapes, not item lists).
 const GENERIC_TYPES = Object.keys(GENERIC_TYPE_LABELS) as GenericSectionType[]
-
 function CustomSectionBody({ customSectionId }: { customSectionId: string }) {
   const section = useResumeStore((state) =>
-    state.data.customSections.find((s) => s.id === customSectionId),
+    state.data.customSections.find((s) => s.id === customSectionId)
   )
   const updateCustomSection = useResumeStore((state) => state.updateCustomSection)
   const reorderCustomSectionItems = useResumeStore((state) => state.reorderCustomSectionItems)
   const removeCustomSectionItem = useResumeStore((state) => state.removeCustomSectionItem)
   const upsertCustomSectionItem = useResumeStore((state) => state.upsertCustomSectionItem)
-
-  // Type changes that would clear existing items get a confirm step first
-  // (per the confirmed plan) -- this holds the pending choice until the
-  // user confirms or cancels. Empty sections switch immediately: nothing
-  // to lose, no need to interrupt.
   const [pendingType, setPendingType] = useState<GenericSectionType | null>(null)
-
   if (!section) return null
-
   const type = section.type as GenericSectionType
   const fields = GENERIC_SECTION_FIELDS[type]
-
   function handleTypeChange(next: GenericSectionType) {
     if (!section || next === type) return
     if (section.items.length === 0) {
@@ -503,13 +433,11 @@ function CustomSectionBody({ customSectionId }: { customSectionId: string }) {
     }
     setPendingType(next)
   }
-
   function confirmTypeChange() {
     if (!pendingType) return
     updateCustomSection(customSectionId, { type: pendingType })
     setPendingType(null)
   }
-
   return (
     <div className="flex flex-col gap-3 border-t border-neutral-700 px-3.5 pb-3.5 pt-3">
       <div className="flex flex-col gap-1.5">
@@ -566,12 +494,6 @@ function CustomSectionBody({ customSectionId }: { customSectionId: string }) {
     </div>
   )
 }
-
-// Shared item list -- drag-to-reorder, inline-expand rows, add-item button
-// -- used by both GenericSectionBody (built-in sections) and
-// CustomSectionBody (custom sections). Deliberately dumb: no store access
-// of its own, just the items/fields to render and callbacks to invoke, so
-// each caller stays responsible for wiring its own section's store methods.
 function GenericItemList({
   items,
   fields,
@@ -589,15 +511,10 @@ function GenericItemList({
   onRemove: (itemId: string) => void
   onUpsert: (item: GenericItem) => void
 }) {
-  // Only one item expanded at a time per section, mirroring the section
-  // accordion's own one-at-a-time behavior. No modal, no draft state — every
-  // field change writes straight to the store, same pattern as BasicsForm.
   const [expandedId, setExpandedId] = useState<string | null>(null)
-
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT }),
+    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT })
   )
-
   function handleItemDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -605,13 +522,11 @@ function GenericItemList({
     const newIndex = items.findIndex((item) => item.id === over.id)
     onReorder(oldIndex, newIndex)
   }
-
   function handleAddItem() {
     const newItem = emptyItemFromFields(fields)
     onUpsert(newItem)
     setExpandedId(newItem.id)
   }
-
   return (
     <>
       <DndContext
@@ -620,19 +535,14 @@ function GenericItemList({
         collisionDetection={closestCenter}
         onDragEnd={handleItemDragEnd}
       >
-        <SortableContext
-          items={items.map((i) => i.id)}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {items.map((item, index) => (
             <InlineSortableItemRow
               key={item.id}
               id={item.id}
               summary={sectionItemSummary(sectionType, item)}
               isExpanded={expandedId === item.id}
-              onToggle={() =>
-                setExpandedId((current) => (current === item.id ? null : item.id))
-              }
+              onToggle={() => setExpandedId((current) => (current === item.id ? null : item.id))}
               onDelete={() => {
                 onRemove(item.id)
                 if (expandedId === item.id) setExpandedId(null)
@@ -640,11 +550,7 @@ function GenericItemList({
               onMoveUp={index > 0 ? () => onReorder(index, index - 1) : undefined}
               onMoveDown={index < items.length - 1 ? () => onReorder(index, index + 1) : undefined}
             >
-              <InlineItemFields
-                fields={fields}
-                item={item}
-                onChange={onUpsert}
-              />
+              <InlineItemFields fields={fields} item={item} onChange={onUpsert} />
             </InlineSortableItemRow>
           ))}
         </SortableContext>
@@ -661,7 +567,6 @@ function GenericItemList({
     </>
   )
 }
-
 function SortableCustomSectionRow({
   customSectionId,
   isOpen,
@@ -678,12 +583,10 @@ function SortableCustomSectionRow({
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: customSectionId,
   })
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
-
   return (
     <div
       ref={setNodeRef}
@@ -718,7 +621,6 @@ function SortableCustomSectionRow({
     </div>
   )
 }
-
 function CustomSectionHeader({
   customSectionId,
   isOpen,
@@ -735,34 +637,25 @@ function CustomSectionHeader({
   onMoveDown?: () => void
 }) {
   const section = useResumeStore((state) =>
-    state.data.customSections.find((s) => s.id === customSectionId),
+    state.data.customSections.find((s) => s.id === customSectionId)
   )
   const updateCustomSection = useResumeStore((state) => state.updateCustomSection)
   const removeCustomSection = useResumeStore((state) => state.removeCustomSection)
-
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState("")
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   useEffect(() => {
     return () => {
       if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
     }
   }, [])
-
   if (!section) return null
-
-  // Mirrors the PDF engine's own fallback for blank-titled custom sections
-  // (src/lib/pdf/section-title.ts): a default label per underlying type,
-  // instead of showing the raw UUID or an empty header.
   const displayTitle =
     section.title || GENERIC_TYPE_LABELS[section.type as GenericSectionType] || section.type
-
   function commitRename() {
     updateCustomSection(customSectionId, { title: titleDraft })
     setRenaming(false)
   }
-
   function handleTitleClick() {
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current)
@@ -776,7 +669,6 @@ function CustomSectionHeader({
       onToggle()
     }, 250)
   }
-
   return (
     <div
       onClick={onToggle}
@@ -883,19 +775,15 @@ function CustomSectionHeader({
     </div>
   )
 }
-
 function ExperienceSectionBody() {
   const items = useResumeStore((state) => state.data.sections.experience.items)
   const reorderSectionItems = useResumeStore((state) => state.reorderSectionItems)
   const removeSectionItem = useResumeStore((state) => state.removeSectionItem)
   const upsertSectionItem = useResumeStore((state) => state.upsertSectionItem)
-
   const [modalItem, setModalItem] = useState<ExperienceItem | "new" | null>(null)
-
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT }),
+    useSensor(PointerSensor, { activationConstraint: DRAG_ACTIVATION_CONSTRAINT })
   )
-
   function handleItemDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -903,7 +791,6 @@ function ExperienceSectionBody() {
     const newIndex = items.findIndex((item) => item.id === over.id)
     reorderSectionItems("experience", oldIndex, newIndex)
   }
-
   return (
     <div className="flex flex-col gap-2 border-t border-neutral-700 px-3.5 pb-3.5 pt-3">
       <DndContext
@@ -912,10 +799,7 @@ function ExperienceSectionBody() {
         collisionDetection={closestCenter}
         onDragEnd={handleItemDragEnd}
       >
-        <SortableContext
-          items={items.map((i) => i.id)}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           {items.map((item, index) => (
             <SortableItemRow
               key={item.id}
@@ -924,9 +808,7 @@ function ExperienceSectionBody() {
               onEdit={() => setModalItem(item)}
               onDelete={() => removeSectionItem("experience", item.id)}
               onMoveUp={
-                index > 0
-                  ? () => reorderSectionItems("experience", index, index - 1)
-                  : undefined
+                index > 0 ? () => reorderSectionItems("experience", index, index - 1) : undefined
               }
               onMoveDown={
                 index < items.length - 1
@@ -960,7 +842,6 @@ function ExperienceSectionBody() {
     </div>
   )
 }
-
 function InlineSortableItemRow({
   id,
   summary,
@@ -981,12 +862,10 @@ function InlineSortableItemRow({
   children: React.ReactNode
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
-
   return (
     <div
       ref={setNodeRef}
@@ -997,10 +876,7 @@ function InlineSortableItemRow({
           : "rounded-md border border-neutral-700 bg-neutral-900 transition-colors duration-150 hover:border-neutral-600"
       }
     >
-      <div
-        onClick={onToggle}
-        className="flex cursor-pointer items-center gap-2.5 px-2.5 py-2"
-      >
+      <div onClick={onToggle} className="flex cursor-pointer items-center gap-2.5 px-2.5 py-2">
         <button
           type="button"
           className="cursor-grab touch-none text-neutral-500 transition-colors hover:text-neutral-300"
@@ -1048,7 +924,6 @@ function InlineSortableItemRow({
     </div>
   )
 }
-
 function SortableItemRow({
   id,
   summary,
@@ -1065,12 +940,10 @@ function SortableItemRow({
   onMoveDown?: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
-
   return (
     <div
       ref={setNodeRef}

@@ -1,33 +1,21 @@
 "use client"
-
 import { useState } from "react"
 import { IconPlus } from "@tabler/icons-react"
 import { useResumeStore, type GenericSectionType } from "@/lib/store/resume"
 import { Button } from "@/components/ui/Button"
 import { Select } from "@/components/ui/Select"
 import { GENERIC_TYPE_LABELS } from "./sectionFieldConfig"
-
 const GENERIC_TYPES = Object.keys(GENERIC_TYPE_LABELS) as GenericSectionType[]
-
-// Sits at the bottom of the Sections tab, below the accordion. Collapsed by
-// default (a single "Add custom section" button); clicking it reveals the
-// two choices a new custom section actually needs -- what shape its items
-// take, and which column it starts in -- confirmed per the project's own
-// process before building. onCreated lets the caller (SectionAccordion)
-// auto-expand the freshly created section using the id addCustomSection
-// returns.
 export function AddCustomSectionButton({ onCreated }: { onCreated: (id: string) => void }) {
   const addCustomSection = useResumeStore((state) => state.addCustomSection)
   const [open, setOpen] = useState(false)
   const [type, setType] = useState<GenericSectionType>("awards")
   const [placement, setPlacement] = useState<"main" | "sidebar">("main")
-
   function handleCreate() {
     const id = addCustomSection(type, placement)
     setOpen(false)
     onCreated(id)
   }
-
   if (!open) {
     return (
       <button
@@ -40,7 +28,6 @@ export function AddCustomSectionButton({ onCreated }: { onCreated: (id: string) 
       </button>
     )
   }
-
   return (
     <div className="flex flex-col gap-3 rounded-md border border-neutral-700 bg-neutral-800 p-3.5">
       <div className="flex flex-col gap-1.5">

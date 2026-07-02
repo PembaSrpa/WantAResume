@@ -1,19 +1,5 @@
 "use client"
-
 import { rgbaToHex, hexToRgba, extractAlpha } from "./colorConvert"
-
-// Shared rgba color picker: schema stores colors as rgba(r, g, b, a) strings,
-// but the native <input type="color"> control only accepts/emits 6-digit
-// hex. These convert between the two so the picker can read/write the real
-// schema value without the user ever seeing rgba() syntax.
-//
-// Originally lived only inside DesignPanel.tsx (page colors, which are
-// always required and never blank). Extracted here so the generic item
-// field system (itemFields.tsx's "icon-color" kind) can reuse it for
-// per-item icon colors, which — unlike page colors — are optional: an
-// empty string means "use the template default." The optional `onClear`
-// prop is what that case uses; DesignPanel's three page-color fields don't
-// pass it, so they keep their original always-has-a-value behavior.
 export function ColorField({
   label,
   value,

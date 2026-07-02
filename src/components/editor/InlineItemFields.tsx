@@ -1,8 +1,6 @@
 "use client"
-
 import type { FieldConfig, GenericItem } from "./itemFields"
 import { FieldRenderer } from "./itemFields"
-
 export function InlineItemFields({
   fields,
   item,
@@ -15,14 +13,12 @@ export function InlineItemFields({
   function patch(key: string, value: unknown) {
     onChange({ ...item, [key]: value })
   }
-
   function patchWebsite(key: string, sub: Record<string, unknown>) {
     onChange({
       ...item,
       [key]: { ...(item[key] as Record<string, unknown>), ...sub },
     })
   }
-
   return (
     <div className="flex flex-col gap-3.5 border-t border-neutral-700 px-3.5 pb-3.5 pt-3">
       {fields.map((field) => (

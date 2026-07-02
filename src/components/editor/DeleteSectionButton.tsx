@@ -1,27 +1,15 @@
 "use client"
-
 import { useEffect, useRef, useState } from "react"
 import { IconTrash } from "@tabler/icons-react"
-
-// Same two-step confirm interaction as ResetTabButton (see that file for
-// the full rationale: no native browser confirm(), reliably testable in
-// jsdom). Kept as its own small component rather than generalizing
-// ResetTabButton with a verb/icon prop, since ResetTabButton is already
-// used in three places (Basics/Sections/Design tab resets) and this one
-// has different wording, icon, and destructive-delete (not reset)
-// semantics -- lower risk to add a sibling than to reshape a shared one.
 const CONFIRM_WINDOW_MS = 4000
-
 export function DeleteSectionButton({ onConfirm }: { onConfirm: () => void }) {
   const [confirming, setConfirming] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [])
-
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation()
     if (confirming) {
@@ -33,7 +21,6 @@ export function DeleteSectionButton({ onConfirm }: { onConfirm: () => void }) {
     setConfirming(true)
     timerRef.current = setTimeout(() => setConfirming(false), CONFIRM_WINDOW_MS)
   }
-
   return (
     <button
       type="button"

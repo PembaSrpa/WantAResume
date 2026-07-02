@@ -1,26 +1,15 @@
 "use client"
-
 import { useResumeStore } from "@/lib/store/resume"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
 import { Switch } from "@/components/ui/Switch"
 import { Field } from "./itemFields"
-
-// Summary lives at data.summary, structurally separate from data.sections,
-// so it's intentionally excluded from SectionAccordion's loop. In the PDF
-// templates it's rendered by the same Section dispatcher as the 11
-// built-in sections in 12 of 15 templates (only leafish/gengar/ditgar pull
-// it into the header as a "featured" block) — so it's presented here as
-// its own distinct, non-collapsible card above the accordion rather than
-// folded into Basics.
 export function SummaryForm() {
   const summary = useResumeStore((state) => state.data.summary)
   const updateField = useResumeStore((state) => state.updateField)
-
   function patchSummary(fields: Partial<typeof summary>) {
     updateField("summary", { ...summary, ...fields })
   }
-
   return (
     <div className="rounded-md border border-neutral-700 bg-neutral-800 p-3.5 md:p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -28,7 +17,7 @@ export function SummaryForm() {
           Summary
         </span>
         <div className="flex items-center gap-2">
-          {/* <span className="text-[11px] text-neutral-500">Hidden</span> */}
+          <span className="text-[11px] text-neutral-500">Hidden</span>
           <Switch
             checked={!summary.hidden}
             onCheckedChange={(checked) => patchSummary({ hidden: !checked })}

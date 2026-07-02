@@ -1,5 +1,4 @@
 "use client"
-
 import { useRef, useState } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { IconPlus, IconTrash, IconUpload, IconUser, IconX } from "@tabler/icons-react"
@@ -9,7 +8,6 @@ import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import { fileToResizedDataUrl } from "./resizeImage"
 import { ResetTabButton } from "./ResetTabButton"
-
 export function BasicsForm() {
   const basics = useResumeStore((state) => state.data.basics)
   const picture = useResumeStore((state) => state.data.picture)
@@ -17,36 +15,24 @@ export function BasicsForm() {
   const resetTab = useResumeStore((state) => state.resetTab)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
-
-  // An uploaded photo is stored as a data: URL in the same field the
-  // Picture URL text input writes to. When one is active, the text input
-  // shouldn't display/edit the raw base64 — that'd be a wall of text — so
-  // it's shown empty and disabled until the photo is removed.
   const isUploadedPhoto = picture.url.startsWith("data:")
-
   function patchBasics(fields: Partial<typeof basics>) {
     updateField("basics", { ...basics, ...fields })
   }
-
   function patchWebsite(fields: Partial<typeof basics.website>) {
     patchBasics({ website: { ...basics.website, ...fields } })
   }
-
   function patchPicture(fields: Partial<typeof picture>) {
     updateField("picture", { ...picture, ...fields })
   }
-
   async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    // Reset so selecting the same file again still fires onChange.
     e.target.value = ""
     if (!file) return
-
     if (!file.type.startsWith("image/")) {
       setPhotoError("Please choose an image file.")
       return
     }
-
     setPhotoError(null)
     try {
       const dataUrl = await fileToResizedDataUrl(file)
@@ -55,27 +41,22 @@ export function BasicsForm() {
       setPhotoError("Could not process that image. Try a different file.")
     }
   }
-
   function handleRemovePhoto() {
     patchPicture({ url: "" })
     setPhotoError(null)
   }
-
   function addCustomField() {
     const field: CustomField = { id: uuidv4(), icon: "", text: "", link: "" }
     patchBasics({ customFields: [...basics.customFields, field] })
   }
-
   function updateCustomField(id: string, fields: Partial<CustomField>) {
     patchBasics({
       customFields: basics.customFields.map((f) => (f.id === id ? { ...f, ...fields } : f)),
     })
   }
-
   function removeCustomField(id: string) {
     patchBasics({ customFields: basics.customFields.filter((f) => f.id !== id) })
   }
-
   return (
     <div className="flex flex-col gap-[18px]">
       <div className="flex justify-end">
@@ -142,7 +123,9 @@ export function BasicsForm() {
         <Input
           value={isUploadedPhoto ? "" : picture.url}
           onChange={(e) => patchPicture({ url: e.target.value })}
-          placeholder={isUploadedPhoto ? "Using uploaded photo — remove it to paste a link" : "https://..."}
+          placeholder={
+            isUploadedPhoto ? "Using uploaded photo — remove it to paste a link" : "https://..."
+          }
           disabled={isUploadedPhoto}
         />
       </Field>
@@ -193,8 +176,8 @@ export function BasicsForm() {
           <p className="mt-1 text-xs text-neutral-300">{photoError}</p>
         ) : (
           <p className="mt-1 text-xs text-neutral-500">
-            Resized and compressed automatically before saving — no upload needed, it&apos;s
-            stored locally with the rest of your resume.
+            Resized and compressed automatically before saving — no upload needed, it&apos;s stored
+            locally with the rest of your resume.
           </p>
         )}
       </div>
@@ -252,7 +235,6 @@ export function BasicsForm() {
     </div>
   )
 }
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">

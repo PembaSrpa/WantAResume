@@ -1,8 +1,6 @@
 "use client"
-
 import { motion } from "motion/react"
 import { cn } from "./cn"
-
 export interface SwitchProps {
   checked: boolean
   onCheckedChange: (checked: boolean) => void
@@ -10,14 +8,7 @@ export interface SwitchProps {
   className?: string
   "aria-label"?: string
 }
-
-export function Switch({
-  checked,
-  onCheckedChange,
-  disabled,
-  className,
-  ...rest
-}: SwitchProps) {
+export function Switch({ checked, onCheckedChange, disabled, className, ...rest }: SwitchProps) {
   return (
     <button
       type="button"

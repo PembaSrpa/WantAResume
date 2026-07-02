@@ -1,7 +1,5 @@
 "use client"
-
 import { Slider } from "@/components/ui/Slider"
-
 export function LevelSlider({
   value,
   onChange,

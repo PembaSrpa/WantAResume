@@ -1,7 +1,6 @@
 import { forwardRef } from "react"
 import type { InputHTMLAttributes } from "react"
 import { cn } from "./cn"
-
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => {
     return (
@@ -19,5 +18,4 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
     )
   }
 )
-
 Input.displayName = "Input"

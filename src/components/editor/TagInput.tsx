@@ -1,9 +1,7 @@
 "use client"
-
 import { useState } from "react"
 import { IconX } from "@tabler/icons-react"
 import { Input } from "@/components/ui/Input"
-
 export function TagInput({
   value,
   onChange,
@@ -12,7 +10,6 @@ export function TagInput({
   onChange: (tags: string[]) => void
 }) {
   const [draft, setDraft] = useState("")
-
   function commitDraft() {
     const tags = draft
       .split(",")
@@ -23,11 +20,9 @@ export function TagInput({
     }
     setDraft("")
   }
-
   function removeTag(index: number) {
     onChange(value.filter((_, i) => i !== index))
   }
-
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap gap-1.5">

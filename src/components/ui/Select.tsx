@@ -2,7 +2,6 @@ import { forwardRef } from "react"
 import type { SelectHTMLAttributes } from "react"
 import { IconChevronDown } from "@tabler/icons-react"
 import { cn } from "./cn"
-
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, children, ...props }, ref) => {
     return (
@@ -28,5 +27,4 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
     )
   }
 )
-
 Select.displayName = "Select"

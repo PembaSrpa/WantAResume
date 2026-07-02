@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import { v4 as uuidv4 } from "uuid"
@@ -8,7 +7,6 @@ import type { ExperienceItem, RoleItem } from "@/lib/schema/data"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
 import { Button } from "@/components/ui/Button"
-
 function emptyExperienceItem(): ExperienceItem {
   return {
     id: uuidv4(),
@@ -22,7 +20,6 @@ function emptyExperienceItem(): ExperienceItem {
     roles: [],
   }
 }
-
 export function ExperienceItemModal({
   item,
   onSave,
@@ -35,15 +32,12 @@ export function ExperienceItemModal({
   const [draft, setDraft] = useState<ExperienceItem>(item ?? emptyExperienceItem())
   const [roleModalOpen, setRoleModalOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<RoleItem | null>(null)
-
   function patch(fields: Partial<ExperienceItem>) {
     setDraft((current) => ({ ...current, ...fields }))
   }
-
   function patchWebsite(fields: Partial<ExperienceItem["website"]>) {
     setDraft((current) => ({ ...current, website: { ...current.website, ...fields } }))
   }
-
   function saveRole(role: RoleItem) {
     const exists = draft.roles.some((r) => r.id === role.id)
     setDraft((current) => ({
@@ -55,14 +49,12 @@ export function ExperienceItemModal({
     setRoleModalOpen(false)
     setEditingRole(null)
   }
-
   function deleteRole(roleId: string) {
     setDraft((current) => ({
       ...current,
       roles: current.roles.filter((r) => r.id !== roleId),
     }))
   }
-
   return (
     <AnimatePresence>
       <motion.div
@@ -220,7 +212,6 @@ export function ExperienceItemModal({
     </AnimatePresence>
   )
 }
-
 function RoleModal({
   role,
   onSave,
@@ -231,9 +222,8 @@ function RoleModal({
   onClose: () => void
 }) {
   const [draft, setDraft] = useState<RoleItem>(
-    role ?? { id: uuidv4(), position: "", period: "", description: "" },
+    role ?? { id: uuidv4(), position: "", period: "", description: "" }
   )
-
   return (
     <motion.div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
@@ -288,7 +278,6 @@ function RoleModal({
     </motion.div>
   )
 }
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">

@@ -1,42 +1,52 @@
 "use client"
-
 import { v4 as uuidv4 } from "uuid"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
 import { TagInput } from "./TagInput"
 import { LevelSlider } from "./LevelSlider"
 import { ColorField } from "./ColorField"
-
-// ---- Field config types -----------------------------------------------
-//
-// Each section type's item shape is described as a list of FieldConfig
-// entries. `key` indexes into the item object (typed as `any` at this
-// generic layer — callers get real typing via the per-type wrapper
-// components below, e.g. SkillsItemModal, ProfileItemModal).
-//
-// Supported kinds, per the doc's spec:
-// - text: plain single-line input
-// - textarea-rich: HTML-accepting textarea (Description-style fields)
-// - website: { url, label, inlineLink } object — renders url/label inputs
-//   plus the inlineLink checkbox, per the corrected per-field pattern
-// - level: 0-5 slider (Skills/Languages)
-// - tags: comma-separated chip input (Skills/Interests keywords)
-// - icon: Phosphor icon name (Profiles/Skills/Interests items only —
-//   schema's iconSchema; empty string uses the template default)
-// - icon-color: rgba color string paired with "icon" (schema's
-//   iconColorSchema; empty string uses the template's default icon color)
-
 export type FieldConfig =
-  | { kind: "text"; key: string; label: string; placeholder?: string }
-  | { kind: "textarea-rich"; key: string; label: string; placeholder?: string }
-  | { kind: "website"; key: string; urlLabel?: string }
-  | { kind: "level"; key: string; label: string }
-  | { kind: "tags"; key: string; label: string }
-  | { kind: "icon"; key: string; label: string }
-  | { kind: "icon-color"; key: string; label: string }
-
-export type GenericItem = Record<string, unknown> & { id: string; hidden: boolean }
-
+  | {
+      kind: "text"
+      key: string
+      label: string
+      placeholder?: string
+    }
+  | {
+      kind: "textarea-rich"
+      key: string
+      label: string
+      placeholder?: string
+    }
+  | {
+      kind: "website"
+      key: string
+      urlLabel?: string
+    }
+  | {
+      kind: "level"
+      key: string
+      label: string
+    }
+  | {
+      kind: "tags"
+      key: string
+      label: string
+    }
+  | {
+      kind: "icon"
+      key: string
+      label: string
+    }
+  | {
+      kind: "icon-color"
+      key: string
+      label: string
+    }
+export type GenericItem = Record<string, unknown> & {
+  id: string
+  hidden: boolean
+}
 function emptyValueFor(field: FieldConfig): unknown {
   switch (field.kind) {
     case "text":
@@ -52,7 +62,6 @@ function emptyValueFor(field: FieldConfig): unknown {
       return []
   }
 }
-
 export function emptyItemFromFields(fields: FieldConfig[]): GenericItem {
   const item: GenericItem = { id: uuidv4(), hidden: false }
   for (const field of fields) {
@@ -60,7 +69,6 @@ export function emptyItemFromFields(fields: FieldConfig[]): GenericItem {
   }
   return item
 }
-
 export function FieldRenderer({
   field,
   value,
@@ -83,7 +91,6 @@ export function FieldRenderer({
           />
         </Field>
       )
-
     case "textarea-rich":
       return (
         <Field label={field.label}>
@@ -96,9 +103,12 @@ export function FieldRenderer({
           <p className="mt-1 text-[11px] text-neutral-500">Accepts HTML.</p>
         </Field>
       )
-
     case "website": {
-      const website = (value as { url: string; label: string; inlineLink: boolean }) ?? {
+      const website = (value as {
+        url: string
+        label: string
+        inlineLink: boolean
+      }) ?? {
         url: "",
         label: "",
         inlineLink: false,
@@ -106,10 +116,7 @@ export function FieldRenderer({
       return (
         <>
           <Field label={field.urlLabel ?? "Website URL"}>
-            <Input
-              value={website.url}
-              onChange={(e) => onWebsiteChange({ url: e.target.value })}
-            />
+            <Input value={website.url} onChange={(e) => onWebsiteChange({ url: e.target.value })} />
           </Field>
           <Field label="Website label">
             <Input
@@ -129,21 +136,18 @@ export function FieldRenderer({
         </>
       )
     }
-
     case "level":
       return (
         <Field label={field.label}>
           <LevelSlider value={(value as number) ?? 0} onChange={onChange} />
         </Field>
       )
-
     case "tags":
       return (
         <Field label={field.label}>
           <TagInput value={(value as string[]) ?? []} onChange={onChange} />
         </Field>
       )
-
     case "icon":
       return (
         <Field label={field.label}>
@@ -157,7 +161,6 @@ export function FieldRenderer({
           </p>
         </Field>
       )
-
     case "icon-color":
       return (
         <ColorField
@@ -169,7 +172,6 @@ export function FieldRenderer({
       )
   }
 }
-
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">

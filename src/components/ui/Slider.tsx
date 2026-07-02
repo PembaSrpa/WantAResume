@@ -1,11 +1,9 @@
 import { forwardRef } from "react"
 import type { InputHTMLAttributes } from "react"
 import { cn } from "./cn"
-
 export interface SliderProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   showValue?: boolean
 }
-
 export const Slider = forwardRef<HTMLInputElement, SliderProps>(
   ({ className, showValue = true, value, ...props }, ref) => {
     return (
@@ -22,13 +20,10 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(
           {...props}
         />
         {showValue && (
-          <span className="min-w-[2ch] text-right text-sm text-neutral-200">
-            {value}
-          </span>
+          <span className="min-w-[2ch] text-right text-sm text-neutral-200">{value}</span>
         )}
       </div>
     )
   }
 )
-
 Slider.displayName = "Slider"

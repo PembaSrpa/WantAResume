@@ -14,13 +14,6 @@ import type {
   VolunteerItem,
   ReferenceItem,
 } from "@/lib/schema/data"
-
-// Human-readable labels for the 11 GenericSectionType values. Two uses:
-// the "type" dropdown when creating/editing a custom section, and as the
-// editor UI's display fallback when a custom section's own title is blank
-// (mirroring how the PDF engine already falls back to a default English
-// title per type for blank-titled custom sections -- see
-// src/lib/pdf/section-title.ts's defaultEnglishSectionTitles).
 export const GENERIC_TYPE_LABELS: Record<GenericSectionType, string> = {
   profiles: "Profiles",
   education: "Education",
@@ -34,16 +27,6 @@ export const GENERIC_TYPE_LABELS: Record<GenericSectionType, string> = {
   volunteer: "Volunteer",
   references: "References",
 }
-
-// Real field shapes per src/lib/schema/data.ts — not the Task B doc's table,
-// which was found to diverge in several places (see SectionAccordion notes).
-// Experience is intentionally excluded: its roles[] sub-modal doesn't fit
-// this generic shape and stays hand-written in SectionItemModal.tsx.
-//
-// Typed as a full Record (not Partial) over GenericSectionType: a missing
-// or misspelled section key here now fails to compile, instead of silently
-// falling back to an empty field list at runtime (the previous behavior
-// under Partial<Record<SectionType, ...>>).
 export const GENERIC_SECTION_FIELDS: Record<GenericSectionType, FieldConfig[]> = {
   profiles: [
     { kind: "text", key: "network", label: "Network", placeholder: "LinkedIn" },
@@ -110,7 +93,12 @@ export const GENERIC_SECTION_FIELDS: Record<GenericSectionType, FieldConfig[]> =
     },
   ],
   certifications: [
-    { kind: "text", key: "title", label: "Title", placeholder: "AWS Certified Solutions Architect" },
+    {
+      kind: "text",
+      key: "title",
+      label: "Title",
+      placeholder: "AWS Certified Solutions Architect",
+    },
     { kind: "text", key: "issuer", label: "Issuer", placeholder: "Amazon Web Services" },
     { kind: "text", key: "date", label: "Date", placeholder: "June 2024" },
     { kind: "website", key: "website" },
@@ -147,7 +135,12 @@ export const GENERIC_SECTION_FIELDS: Record<GenericSectionType, FieldConfig[]> =
   ],
   references: [
     { kind: "text", key: "name", label: "Name", placeholder: "John Smith" },
-    { kind: "text", key: "position", label: "Position", placeholder: "Engineering Director, Acme Inc." },
+    {
+      kind: "text",
+      key: "position",
+      label: "Position",
+      placeholder: "Engineering Director, Acme Inc.",
+    },
     { kind: "website", key: "website" },
     { kind: "text", key: "phone", label: "Phone", placeholder: "+1 (555) 123-4567" },
     {
@@ -158,9 +151,6 @@ export const GENERIC_SECTION_FIELDS: Record<GenericSectionType, FieldConfig[]> =
     },
   ],
 }
-
-// What shows in the collapsed item row, per section type. Falls back to a
-// generic "Untitled" if the relevant field is empty.
 export function sectionItemSummary(sectionType: SectionType, item: unknown): string {
   switch (sectionType) {
     case "profiles": {

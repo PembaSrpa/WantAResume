@@ -1,5 +1,4 @@
 "use client"
-
 import { useResumeStore } from "@/lib/store/resume"
 import { fontList } from "@/lib/pdf/fonts"
 import type { Metadata } from "@/lib/schema/data"
@@ -8,19 +7,20 @@ import { Slider } from "@/components/ui/Slider"
 import { Input } from "@/components/ui/Input"
 import { ColorField } from "./ColorField"
 import { ResetTabButton } from "./ResetTabButton"
-
 type PageFormat = Metadata["page"]["format"]
 type LevelType = Metadata["design"]["level"]["type"]
-
-const PAGE_FORMATS: { value: PageFormat; label: string }[] = [
+const PAGE_FORMATS: {
+  value: PageFormat
+  label: string
+}[] = [
   { value: "a4", label: "A4" },
   { value: "letter", label: "Letter" },
   { value: "free-form", label: "Free-form" },
 ]
-
-// Real enum from metadata.design.level.type (src/lib/schema/data.ts). Not
-// the originally-assumed "bar/circle/dot/line" — confirmed against schema.
-const LEVEL_TYPES: { value: LevelType; label: string }[] = [
+const LEVEL_TYPES: {
+  value: LevelType
+  label: string
+}[] = [
   { value: "hidden", label: "Hidden" },
   { value: "circle", label: "Circle" },
   { value: "square", label: "Square" },
@@ -29,7 +29,6 @@ const LEVEL_TYPES: { value: LevelType; label: string }[] = [
   { value: "progress-bar", label: "Progress bar" },
   { value: "icon", label: "Icon" },
 ]
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
@@ -37,31 +36,26 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     </p>
   )
 }
-
 export function DesignPanel() {
   const metadata = useResumeStore((state) => state.data.metadata)
   const updateField = useResumeStore((state) => state.updateField)
   const resetTab = useResumeStore((state) => state.resetTab)
-
   function patchMetadata(patch: Partial<Metadata>) {
     updateField("metadata", { ...metadata, ...patch })
   }
-
   function patchColors(patch: Partial<Metadata["design"]["colors"]>) {
     patchMetadata({
       design: { ...metadata.design, colors: { ...metadata.design.colors, ...patch } },
     })
   }
-
   function patchLevel(patch: Partial<Metadata["design"]["level"]>) {
     patchMetadata({
       design: { ...metadata.design, level: { ...metadata.design.level, ...patch } },
     })
   }
-
   function patchTypography(
     block: "body" | "heading",
-    patch: Partial<Metadata["typography"]["body"]>,
+    patch: Partial<Metadata["typography"]["body"]>
   ) {
     patchMetadata({
       typography: {
@@ -70,11 +64,9 @@ export function DesignPanel() {
       },
     })
   }
-
   function patchPage(patch: Partial<Metadata["page"]>) {
     patchMetadata({ page: { ...metadata.page, ...patch } })
   }
-
   return (
     <div className="flex flex-col gap-5">
       <div className="flex justify-end">
@@ -106,9 +98,7 @@ export function DesignPanel() {
 
       {(["body", "heading"] as const).map((block) => (
         <div key={block}>
-          <SectionLabel>
-            Typography — {block === "body" ? "Body" : "Heading"}
-          </SectionLabel>
+          <SectionLabel>Typography — {block === "body" ? "Body" : "Heading"}</SectionLabel>
           <div className="mt-2 grid grid-cols-[2fr_1fr] gap-2.5">
             <div className="flex flex-col gap-1.5">
               <span className="text-[10.5px] text-neutral-400">Font family</span>
@@ -133,9 +123,7 @@ export function DesignPanel() {
                 step={1}
                 showValue={false}
                 value={metadata.typography[block].fontSize}
-                onChange={(e) =>
-                  patchTypography(block, { fontSize: Number(e.target.value) })
-                }
+                onChange={(e) => patchTypography(block, { fontSize: Number(e.target.value) })}
               />
             </div>
           </div>
@@ -222,9 +210,7 @@ export function DesignPanel() {
 
           {metadata.design.level.type === "icon" && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10.5px] text-neutral-400">
-                Icon name (Phosphor Icons)
-              </span>
+              <span className="text-[10.5px] text-neutral-400">Icon name (Phosphor Icons)</span>
               <Input
                 value={metadata.design.level.icon}
                 onChange={(e) => patchLevel({ icon: e.target.value })}

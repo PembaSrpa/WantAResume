@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { IconEye, IconArrowLeft } from "@tabler/icons-react"
@@ -13,45 +12,28 @@ import { Button } from "@/components/ui/Button"
 import { Select } from "@/components/ui/Select"
 import { useResumeStore } from "@/lib/store/resume"
 import { templateSchema, type Template } from "@/lib/schema/templates"
-
-// Editing only. PreviewPanel/PDFCanvas/PDF.js are NOT imported anywhere in
-// this file or its tree — see TASK_PREVIEW_SPLIT.md. Preview lives at its
-// own route, /editor/preview, so this route's bundle never has to load
-// @react-pdf/renderer, pdfjs-dist, or the 15 template files.
-
-// EditorTab is now just an alias for BottomNavTab — they're the same three
-// values (basics/sections/design) since Preview is gone from mobile
-// entirely (TASK_MOBILE_AND_DEFAULT_TAB.md) and there's no longer any
-// BottomNav-only concept that isn't also a real editor tab. Per
-// TASK_MOBILE_LAYOUT.md, this removes the old lastEditorTab/mapping-function
-// layer at the source rather than patching around the conflation again.
 type EditorTab = BottomNavTab
-
-const EDITOR_TABS: { id: EditorTab; label: string }[] = [
+const EDITOR_TABS: {
+  id: EditorTab
+  label: string
+}[] = [
   { id: "basics", label: "Basics" },
   { id: "sections", label: "Sections" },
   { id: "design", label: "Design" },
 ]
-
 const TEMPLATES = templateSchema.options
-
 function templateLabel(name: Template) {
   return name.charAt(0).toUpperCase() + name.slice(1)
 }
-
 export default function EditorPage() {
   const router = useRouter()
   const [editorTab, setEditorTab] = useState<EditorTab>("basics")
-
   return (
     <div className="relative h-screen overflow-hidden bg-[#0a0a0a]">
-      {/* Desktop / tablet: Scales only show at >=1024px per spec (hidden on tablet+mobile) */}
       <div className="hidden lg:block">
         <Scales variant="compact" />
       </div>
 
-      {/* Desktop layout: editor fills the space between the scales. No
-          preview column anymore — see TASK_PREVIEW_SPLIT.md. */}
       <div className="hidden h-full lg:flex">
         <div className="w-[5%] flex-shrink-0" />
         <div className="flex-1 overflow-y-auto">
@@ -65,7 +47,6 @@ export default function EditorPage() {
         <div className="w-[5%] flex-shrink-0" />
       </div>
 
-      {/* Tablet layout: same single-panel editor, no Scales. */}
       <div className="hidden h-full md:flex lg:hidden">
         <div className="flex-1 overflow-y-auto">
           <EditorPanelShell
@@ -77,12 +58,6 @@ export default function EditorPage() {
         </div>
       </div>
 
-      {/* Mobile layout: single panel driven by a 3-tab bottom nav
-          (Basics/Sections/Design — no Preview on mobile, see
-          TASK_MOBILE_AND_DEFAULT_TAB.md). BottomNav wires directly to
-          editorTab/setEditorTab now, no mapping layer needed. A slim
-          back-button row replaces the old "no top navbar" emptiness —
-          this is a single-purpose affordance, not a full navbar. */}
       <div className="flex h-full flex-col md:hidden">
         <div className="flex items-center border-b border-neutral-800 px-3 py-2">
           <button
@@ -94,9 +69,8 @@ export default function EditorPage() {
             <IconArrowLeft size={16} />
           </button>
         </div>
-        {/* px-4 horizontal padding added per TASK_MOBILE_LAYOUT.md — content
-            previously ran edge-to-edge with no margin on mobile. */}
-        <div className="flex-1 overflow-y-auto px-4 pb-16 pt-4">
+
+        <div className="flex-1 overflow-y-auto px-4 pb-24 pt-4">
           {editorTab === "basics" && <BasicsForm />}
           {editorTab === "sections" && (
             <div className="flex flex-col gap-2.5">
@@ -113,7 +87,6 @@ export default function EditorPage() {
     </div>
   )
 }
-
 function EditorPanelShell({
   activeTab,
   onTabChange,
@@ -127,7 +100,6 @@ function EditorPanelShell({
 }) {
   const template = useResumeStore((state) => state.template)
   const setTemplate = useResumeStore((state) => state.setTemplate)
-
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-neutral-800 px-4">
@@ -187,31 +159,16 @@ function EditorPanelShell({
     </div>
   )
 }
-
-// DesignPanelPlaceholder still in use — Design tab not built yet. The
-// template Select here is the only place mobile can change templates
-// (EditorPanelShell's header, where desktop/tablet's copy lives, is never
-// rendered on mobile) — see TASK_MOBILE_LAYOUT.md issue 3. When the real
-// Design tab gets built, this control should move there properly rather
-// than staying a standalone addition to the placeholder.
-//
-// onPreview is optional and mobile-only: desktop/tablet already has a
-// Preview button in EditorPanelShell's header, so rendering a second one
-// here would be redundant for those breakpoints.
 function DesignPanelPlaceholder({ onPreview }: { onPreview?: () => void }) {
   const template = useResumeStore((state) => state.template)
   const setTemplate = useResumeStore((state) => state.setTemplate)
-
   return (
     <div className="flex flex-col gap-5">
       <label className="flex flex-col gap-1.5">
         <span className="text-[11px] font-medium uppercase tracking-[0.04em] text-neutral-400">
           Template
         </span>
-        <Select
-          value={template}
-          onChange={(e) => setTemplate(e.target.value as Template)}
-        >
+        <Select value={template} onChange={(e) => setTemplate(e.target.value as Template)}>
           {TEMPLATES.map((name) => (
             <option key={name} value={name}>
               {templateLabel(name)}
