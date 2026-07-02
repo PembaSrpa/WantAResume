@@ -29,3 +29,9 @@ Everything lives entirely in your browser. Nothing is ever sent anywhere.
 ## Your Data
 
 Everything you enter - your resume content, template choice, and design settings - is saved automatically to your browser's local storage as you go. Close the tab, come back later, and it's all still there. There's no account to create and no server it's synced to; if you clear your browser's site data, it's gone, so export a PDF once you're happy with it.
+
+---
+
+## Credit
+ 
+The 15 templates and the underlying PDF rendering engine are ported from [Reactive Resume](https://github.com/AmruthPillai/Reactive-Resume) by Amruth Pillai, used under its MIT license. All credit for the original template designs goes to that project.
